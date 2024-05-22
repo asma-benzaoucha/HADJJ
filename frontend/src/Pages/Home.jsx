@@ -1,6 +1,5 @@
 import useAuth from "../Context/useAuth";
 import { Outlet, useNavigate } from "react-router-dom";
-
 import { Box, Avatar } from "@mui/material";
 import Stepper from "../Components/Stepper";
 import { useTheme, useMediaQuery } from "@mui/material";
@@ -31,24 +30,21 @@ const Home = () => {
   }
 
   useEffect(() => {
-    if (phase === "L" && status === "P") {
-      navigate("Draw");
-    }
-    if (phase === "V" && status === "P") {
-      navigate("VisitMed");
-    }
-    if (phase === "P" && status === "P") {
-      navigate("payement");
-    }
-    if (phase === "R" && status === "P") {
-      navigate("Reservation");
-    }
-    if (phase === "R" && status === "C") {
+    const routes = {
+      R: { R: "Message", P: "Reservation", C: "Message" },
+      L: { P: "Draw" },
+      V: { P: "VisitMed" },
+      P: { P: "payement" },
+      I: { P: "Message" },
+      null: { null: "/" },
+    };
+
+    if (status && phase && routes[phase]?.[status]) {
+      navigate(routes[phase][status]);
+    } else if (status === "R") {
       navigate("Message");
-    } else if (phase === null && status === null) {
-      navigate("/");
     }
-  }, []);
+  }, [status, phase]);
 
   const handleclick = () => {
     navigate("Draw");
@@ -90,7 +86,7 @@ const Home = () => {
             borderBottomLeftRadius: { xs: "20px", md: "0px" },
             backgroundColor: "#996986",
             borderBottom: "2px solid rgba(0, 0, 0, 0.4)",
-            py: { xs: 1, md: 3 },
+            py: { xs: 1, md: 2 },
           }}
         >
           <Avatar
@@ -105,7 +101,6 @@ const Home = () => {
             style={{
               color: "white",
               fontWeight: "600",
-              marginTop: "10px",
               fontSize: "16px",
             }}
           >

@@ -281,7 +281,11 @@ function Signup() {
               className={!validGender && submitted ? "invalid-input" : "input"}
             >
               <img src={Gendericon} fontSize="medium" className="icon" />
-              <select required onChange={handleGenderChange}>
+              <select
+                required
+                onChange={handleGenderChange}
+                style={{ width: "85%" }}
+              >
                 <option value="">Select gender</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>

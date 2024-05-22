@@ -220,6 +220,7 @@ const Participation = () => {
 
         if (response.status === 201) {
           localStorage.setItem("Status", "P");
+
           navigate("/home/message");
         }
       } catch (error) {

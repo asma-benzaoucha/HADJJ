@@ -72,11 +72,16 @@ const Login = () => {
             localStorage.setItem("wilaya", response?.data?.wilaya?.name);
             localStorage.setItem("wilaya_id", response?.data?.wilaya?.id);
           }
+
+          console.log("response", responseData?.user_status?.status?.process);
           if (role === "Candidate") {
-            if (responseData?.user_status?.pahse === null) {
+            if (responseData?.user_status?.status?.status == null) {
               console.log("in login navigated to /");
               navigate("/");
-            } else {
+            } else if (
+              responseData?.user_status?.status?.status &&
+              responseData?.user_status?.status?.process
+            ) {
               navigate("/Home");
             }
           }
