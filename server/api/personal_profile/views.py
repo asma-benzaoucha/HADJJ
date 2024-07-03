@@ -47,6 +47,7 @@ def personal_profile(request):
     elif request.method == 'POST':
         data = request.data
         user = request.user
+        # print('data',data)
         
         try:
             profile = PersonalProfile.objects.get(user=user)
@@ -56,9 +57,22 @@ def personal_profile(request):
         
         data['user'] = user.id
         
-        if data.get('companion') is not None:
-            data['companion']['user'] = user.id
         my_data = {key:value[0] for key,value in data.lists()}
+        
+        if user.gender == 'F':
+            companion = {
+                "user": user.id,
+                "first_name": data.get('companion[first_name]'),
+                "last_name": data.get('companion[last_name]'),
+                "birth_date": data.get('companion[birth_date]'),
+                "nin": data.get('companion[nin]'),
+                "passport_number": data.get('companion[passport_number]'),
+                "passport_expiration_date": data.get('companion[passport_expiration_date]'),
+                "birth_certificate_number": data.get('companion[birth_certificate_number]'),
+                "address": data.get('companion[address]'),
+            }
+            my_data['companion'] = companion
+
         print(my_data)
         serializer = PersonalProfileSerializer(data=my_data)
         if serializer.is_valid():
@@ -75,7 +89,7 @@ def personal_profile(request):
             profile = user.personal_profile
         except PersonalProfile.DoesNotExist:
             return Response({'success':False,'message' : 'profile not found'}, status=status.HTTP_404_NOT_FOUND)
-        my_data = {key:value[0] for key,value in data.list()}
+        my_data = {key:value[0] for key,value in data.lists()}
         serializer = PersonalProfileSerializer(profile, data=my_data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -102,7 +116,11 @@ def accept_or_refuse_candidate(request):
             user_status.status = UserStatus.Status.PENDING
             user_status.process = UserStatus.Process.LOTTERY
             user_status.save()
-            UserInscriptionHistory.objects.create(user=user, inscription_count=1+inscription_count, latest_inscription_year=datetime.now().year)
+            # UserInscriptionHistory.objects.create(user=user, inscription_count=1+inscription_count, latest_inscription_year=datetime.now().year)
+            inscription = UserInscriptionHistory.objects.get(user=user)
+            inscription.inscription_count = 1+inscription_count
+            inscription.latest_inscription_year = datetime.now().year
+            inscription.save()
             try:
                 phase = Phase.objects.get(pilgrimage_season_info__is_active=True, phase_number=1)
             except Phase.DoesNotExist:

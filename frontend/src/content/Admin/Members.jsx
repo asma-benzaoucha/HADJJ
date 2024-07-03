@@ -346,6 +346,7 @@ const Members = () => {
           >
             <ThemeProvider theme={myTheme}>
               <DataGrid
+                loading={data.length === 0}
                 columns={columns}
                 onRowSelectionModelChange={handleSelectionChange}
                 rows={data}

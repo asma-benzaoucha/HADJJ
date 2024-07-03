@@ -72,7 +72,7 @@ const UserValidation = ({ onClose, user }) => {
         {
           is_accepted: true,
           nin: user.nin,
-          inscription_count: participationNumber,
+          inscription_count: parseInt(participationNumber),
         },
         {
           headers: {
@@ -422,7 +422,7 @@ const UserValidation = ({ onClose, user }) => {
                       color: "#D01717",
                     }}
                   >
-                    {user.fullName}
+                    {user.companion.first_name}
                   </span>
                   <span style={{ fontWeight: 500, fontSize: "15px" }}>
                     Last name:
@@ -434,7 +434,7 @@ const UserValidation = ({ onClose, user }) => {
                       color: "#D01717",
                     }}
                   >
-                    {user.fullName}
+                    {user.companion.last_name}
                   </span>
                   <span style={{ fontWeight: 500, fontSize: "15px" }}>
                     Wilaya
@@ -481,7 +481,7 @@ const UserValidation = ({ onClose, user }) => {
                       color: "#D01717",
                     }}
                   >
-                    {user.contact}
+                    {user.companion.birth_date}
                   </span>
                   <span style={{ fontWeight: 500, fontSize: "15px" }}>
                     NIN:
@@ -493,7 +493,7 @@ const UserValidation = ({ onClose, user }) => {
                       color: "#D01717",
                     }}
                   >
-                    {user.nin}
+                    {user.companion.nin}
                   </span>
                   <span style={{ fontWeight: 500, fontSize: "13px" }}>
                     Date of passport&apos;s expiration:
@@ -505,7 +505,7 @@ const UserValidation = ({ onClose, user }) => {
                       color: "#D01717",
                     }}
                   >
-                    {user.nin}
+                    {user.companion.passport_expiration_date}
                   </span>
                 </Stack>
               </Box>

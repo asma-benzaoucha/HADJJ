@@ -1,10 +1,17 @@
 import { Box, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "../../Api/base";
 
-const status = localStorage.getItem("Status");
-const process = localStorage.getItem("process");
+const today = new Date();
+const formattedDate = today.toISOString().split("T")[0];
 
-const renderContent = (status, process) => {
+const renderContent = (status, process, deadline) => {
+  const navigate = useNavigate();
+  const handleModify = () => {
+    localStorage.setItem("modify", true);
+    navigate("/participate");
+  };
   switch (true) {
     case process == "I" && status == "P":
       return (
@@ -61,17 +68,42 @@ const renderContent = (status, process) => {
             fontWeight="bold"
             sx={{ fontSize: "30px", height: "65px", color: "#000000" }}
           >
-            Another Message for I and R
+            {formattedDate > deadline
+              ? "Deadline Passed"
+              : " Incorrect Data Detected"}
           </Typography>
           <Typography
             sx={{ fontSize: "19px", textAlign: "center", color: "#000000" }}
           >
-            This is a different message for the case where process is I and
-            status is R.
+            {formattedDate > deadline ? (
+              "We're sorry, but the deadline for updating information has passed. Unfortunately, you can no longer make changes to your data."
+            ) : (
+              <span>
+                We&apos;ve detected discrepancies in the information provided.
+                Please review and update your details accordingly before the
+                deadline (<span style={{ color: "red" }}>{deadline}</span>).
+                Your cooperation is appreciated.
+              </span>
+            )}
           </Typography>
+
+          {formattedDate >= deadline ? null : (
+            <button
+              onClick={handleModify}
+              className="button"
+              style={{
+                width: "150px",
+                height: "50px",
+                borderRadius: "15px",
+                marginTop: "20px",
+              }}
+            >
+              Modify
+            </button>
+          )}
         </Box>
       );
-    case process == "L":
+    case process == "L" && status == "R":
       return (
         <Box
           sx={{
@@ -101,6 +133,40 @@ const renderContent = (status, process) => {
             We sincerely thank you for participating in the Hajj selection
             process this year. Although you were not selected this time, your
             intention and commitment are truly valuable
+          </Typography>
+        </Box>
+      );
+    case process == "L" && status == "I":
+      return (
+        <Box
+          sx={{
+            width: "619px",
+            height: "251px",
+            padding: "25px",
+            borderRadius: "20px",
+            border: "3px solid #AB7595",
+            backgroundColor: "white",
+            marginBottom: "90px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Typography
+            variant="h5"
+            fontWeight="bold"
+            sx={{ fontSize: "30px", height: "65px", color: "#000000" }}
+          >
+            You are in the Reserve List
+          </Typography>
+          <Typography
+            sx={{ fontSize: "19px", textAlign: "center", color: "#000000" }}
+          >
+            We sincerely thank you for participating in the Hajj selection
+            process this year. You are currently on the reserve list. You may
+            start your Hajj procedure at any time if other participants are
+            rejected or do not complete their registration processes
           </Typography>
         </Box>
       );
@@ -158,12 +224,13 @@ const renderContent = (status, process) => {
             fontWeight="bold"
             sx={{ fontSize: "30px", height: "65px", color: "#000000" }}
           >
-            Different Process P
+            Deadline Passed
           </Typography>
           <Typography
             sx={{ fontSize: "19px", textAlign: "center", color: "#000000" }}
           >
-            This is a message for the case where process is P.
+            We&lsquo;re sorry, but the deadline for payement has passed,
+            Unfortunately, you can no longer eligable.
           </Typography>
         </Box>
       );
@@ -192,7 +259,12 @@ const renderContent = (status, process) => {
             Done !
           </Typography>
           <Typography
-            sx={{ fontSize: "19px", textAlign: "center", color: "#000000" }}
+            sx={{
+              fontSize: "19px",
+              textAlign: "center",
+              color: "#000000",
+              fontWeight: 600,
+            }}
           >
             We wish you an accepted Hajj and a spiritually fulfilling
             experience!
@@ -221,12 +293,13 @@ const renderContent = (status, process) => {
             fontWeight="bold"
             sx={{ fontSize: "30px", height: "65px", color: "#000000" }}
           >
-            Different Process R and Status P
+            Deadline Passed
           </Typography>
           <Typography
             sx={{ fontSize: "19px", textAlign: "center", color: "#000000" }}
           >
-            This is a message for the case where process is R and status is P.
+            We&lsquo;re sorry, but the deadline for reservation has passed, you
+            can no longer make a reservation.
           </Typography>
         </Box>
       );
@@ -236,14 +309,67 @@ const renderContent = (status, process) => {
 };
 
 const Message = () => {
+  const [status, setStatus] = useState("");
+  const [process, setProcess] = useState("");
+  const [deadline, setDeadline] = useState("");
+
+  useEffect(() => {
+    const fetchInfo = async () => {
+      try {
+        const response = await axios.get("/pilgrimage/current");
+        console.log(response);
+        if (response.status === 200) {
+          //setDeadline(response.data.inscription_deadline);
+          setDeadline("2025-01-01");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
+    fetchInfo();
+  }, []);
+
+  useEffect(() => {
+    const response = axios
+      .get("/auth/status", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
+      .then((response) => {
+        console.log(response.data);
+        localStorage.setItem("Status", response?.data?.status);
+        localStorage.setItem("process", response?.data?.process);
+        setStatus(response?.data?.status);
+        setProcess(response?.data?.process);
+      });
+
+    console.log(response.data);
+  }, []);
+
   const navigate = useNavigate();
   const handleLogOut = () => {
     localStorage.clear();
     navigate("/");
   };
 
+  const [refresh, setRefresh] = useState(false);
+
+  useEffect(() => {
+    setRefresh(!refresh);
+  }, [process, status]);
+
   return (
-    <div className="Unfortunately-body">
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        left: "345px",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
       <button
         onClick={handleLogOut}
         className="button"
@@ -259,7 +385,7 @@ const Message = () => {
       >
         Log Out
       </button>
-      {renderContent(status, process)}
+      {renderContent(status, process, deadline)}
     </div>
   );
 };

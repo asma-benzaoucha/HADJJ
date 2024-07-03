@@ -28,7 +28,13 @@ const Season = () => {
   const [alertErr, setAlertErr] = useState(false);
   const [alertInfo, setAlertInfo] = useState(false);
   const [err, setErr] = useState("");
-
+  const hideAlert = () => {
+    setTimeout(() => {
+      setAlertSuc(false);
+      setAlertErr(false);
+      setAlertInfo(false);
+    }, 2000);
+  };
   useEffect(() => {
     const accessToken = localStorage.getItem("accessToken");
 
@@ -43,13 +49,15 @@ const Season = () => {
         setData(response.data);
       } catch (error) {
         // Handle network errors or Axios request errors
-        console.error("Error:", error);
-        setErr("Invalid email");
+        console.error("Errorrr:", error);
+        setAlertErr(true);
+        setErr("Cannot get seasons, please try again later");
+        hideAlert();
       }
     };
 
     fetchData(); // Call the async function to execute it
-  }, []);
+  }, [isModalOpen]);
 
   useEffect(() => {
     if (data) {
@@ -87,14 +95,6 @@ const Season = () => {
       setErr("error");
       hideAlert();
     }
-  };
-
-  const hideAlert = () => {
-    setTimeout(() => {
-      setAlertSuc(false);
-      setAlertErr(false);
-      setAlertInfo(false);
-    }, 2000);
   };
 
   const handleOpenModal = () => {
@@ -138,6 +138,9 @@ const Season = () => {
           <Alert
             sx={{
               position: "absolute",
+              top: "10px",
+              left: "50%",
+              transform: "translate(-50%, 0)",
               opacity: 1,
               transition: "opacity 0.5s ease-in-out",
               boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
@@ -151,6 +154,9 @@ const Season = () => {
           <Alert
             sx={{
               position: "absolute",
+              top: "10px",
+              left: "50%",
+              transform: "translate(-50%, 0)",
               opacity: 1,
               transition: "opacity 0.5s ease-in-out",
               boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
@@ -165,6 +171,9 @@ const Season = () => {
           <Alert
             sx={{
               position: "absolute",
+              top: "10px",
+              left: "50%",
+              transform: "translate(-50%, 0)",
               opacity: 1,
               transition: "opacity 0.5s ease-in-out",
               boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",

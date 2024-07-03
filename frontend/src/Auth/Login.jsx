@@ -3,16 +3,29 @@ import { Box, Checkbox, Stack } from "@mui/material";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AuthContext from "../Context/AuthProvider";
 import { Link } from "react-router-dom";
 import axios from "../Api/base";
 import { useNavigate } from "react-router-dom";
+import CircularProgress from "@mui/material/CircularProgress";
+import Alert from "@mui/material/Alert";
 
 const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 //const passwordPattern = /^(?=.*[A-Z])(?=.*\d).{8,26}$/;
-const passwordPattern = /^(?=.*\d).{8,26}$/;
+const passwordPattern = /^(?=.*\d).{8,500}$/;
 
 const Login = () => {
+  const [alertErr, setAlertErr] = useState(false);
+  const [alertInfo, setAlertInfo] = useState(false);
+  const [err, setErr] = useState("");
+  const hideAlert = () => {
+    setTimeout(() => {
+      setAlertErr(false);
+      setAlertInfo(false);
+    }, 2000);
+  };
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { setAuth } = useContext(AuthContext);
 
@@ -35,13 +48,13 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validEmail && validPassword) {
+      setLoading(true);
       const data = { email: email, password: password };
       console.log(data);
       try {
         const response = await axios.post("/auth/log-in", data);
         if (response.status === 200) {
           console.log(response);
-
           const responseData = response.data;
           const accessToken = responseData?.access;
           const refreshToken = responseData?.refresh;
@@ -66,6 +79,7 @@ const Login = () => {
             response?.data?.user_status?.phase?.start_date
           );
           localStorage.setItem("email", email);
+          localStorage.setItem("profile_pic", response?.data?.profile_pic);
           setAuth({ name, role, accessToken, refreshToken });
           if (role === "Admin" || role === "GeneralAdmin") {
             navigate("/Admin");
@@ -95,16 +109,69 @@ const Login = () => {
         }
       } catch (error) {
         console.error("Error:", error);
+        setAlertErr(true);
+        setErr(error.response.data.error);
+        hideAlert();
 
-        alert("Request failed : Invalid cardenalities");
+        setLoading(false);
       }
     } else {
-      alert("Invalid email or password");
+      setAlertInfo(true);
+      setErr("Invalid email or password");
+      hideAlert();
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-body">
+      {alertErr && (
+        <Alert
+          sx={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="error"
+        >
+          {err}
+        </Alert>
+      )}
+      {alertInfo && (
+        <Alert
+          sx={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="info"
+        >
+          {err}
+        </Alert>
+      )}
+      <Link to="/">
+        <ArrowBackIcon fontSize="large" sx={{ mt: 4, ml: 4 }} />
+      </Link>
+      {loading && (
+        <div
+          style={{
+            position: "fixed",
+            top: "10px",
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
+          <CircularProgress />
+        </div>
+      )}
       <Box
         sx={{
           position: "absolute",
@@ -223,7 +290,11 @@ const Login = () => {
             </Stack>
 
             <div className="sub-but">
-              <button className="button" onClick={handleSubmit}>
+              <button
+                className="button"
+                onClick={handleSubmit}
+                disabled={!email || !password || loading}
+              >
                 Log in
               </button>
             </div>

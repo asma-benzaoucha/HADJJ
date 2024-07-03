@@ -15,12 +15,13 @@ class UserMedicalAdminProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name','last_name','email','password','gender','role']
+        fields = ["id",'first_name','last_name','email','password','gender','role']
         extra_kwargs = {
             'first_name': {'required': True},
             'last_name': {'required': True},
             'gender': {'required': True},
-            'role'  : {'read_only': True}
+            'role'  : {'read_only': True},
+            'id': {'read_only': True}
         }
         
     def create(self, validated_data):
@@ -44,6 +45,7 @@ class TimeSlotSerializer(serializers.Serializer):
 class MedicalAdminProfileSerializer(serializers.ModelSerializer):
     user = UserMedicalAdminProfileSerializer()
     work_schedule = TimeSlotSerializer(many=True)  
+    # hospital_name = serializers.CharField(write_only=True)
     
     class Meta:
         model = MedicalAdminProfile
@@ -51,7 +53,6 @@ class MedicalAdminProfileSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):        
         hospital_name = self.context['request'].data.get('hospital_name')
-
         # Check if the hospital exists
         try: 
             hospital = Hospital.objects.get(Q(name=hospital_name) | Q(eng_name=hospital_name))
@@ -59,7 +60,7 @@ class MedicalAdminProfileSerializer(serializers.ModelSerializer):
             raise ValidationError({"hospital_name": "Hospital with this name does not exist."})
         user_data = validated_data.pop('user')
         # Generate the password as concatenation of last name and email
-        password = user_data.get('last_name', '') + user_data.get('email', '')
+        password =user_data.get('email', '')
         # Set the password in user_data
         user_data['password'] = password
 

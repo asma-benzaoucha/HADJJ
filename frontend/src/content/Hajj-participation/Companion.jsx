@@ -11,6 +11,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import PersonIcon from "@mui/icons-material/Person";
 import useAuth from "../../Context/useAuth";
+import Alert from "@mui/material/Alert";
 
 import dayjs from "dayjs";
 
@@ -21,6 +22,18 @@ const passport = /^\d{9}$/;
 const nameRegExp = /^[a-zA-Z]+(?:[\s'-][a-zA-Z]+)*$/;
 
 const Companion = () => {
+  const [alertsuc, setAlertSuc] = useState(false);
+  const [alertErr, setAlertErr] = useState(false);
+  const [alertInfo, setAlertInfo] = useState(false);
+  const [err, setErr] = useState("");
+
+  const hideAlert = () => {
+    setTimeout(() => {
+      setAlertSuc(false);
+      setAlertErr(false);
+      setAlertInfo(false);
+    }, 3000);
+  };
   const { auth } = useAuth();
   const data = auth?.data;
 
@@ -118,7 +131,7 @@ const Companion = () => {
     e.preventDefault();
 
     const access = localStorage.getItem("accessToken");
-    console.log({
+    console.log("companion data", {
       profile_pic: data.profile_pic,
       nin: data.nin,
       phone_number: data.phone_number,
@@ -152,55 +165,160 @@ const Companion = () => {
       validLastName &&
       validAdress
     ) {
+      const modify = localStorage.getItem("modify");
       try {
-        const response = await axios.post(
-          "/profile/",
-          {
-            picture: data.profile_pic,
-            nin: data.nin,
-            phone_number: data.phone_number,
-            birth_date: data.birth_date,
-            passport_number: data.passport_number,
-            passport_expiration_date: data.passport_expiration_date,
-            birth_certificate_number: data.birth_certificate_number,
-            files: data.files,
-            address: data.address,
-            municipal: data.municipal,
-            wilaya: data.wilaya,
-            companion: {
-              first_name: firstName,
-              last_name: lastName,
-              birth_date: userBirthDate,
-              nin: nin,
-              passport_number: passportNumber,
-              passport_expiration_date: passportExp,
-              birth_certificate_number: birthCertificateNumber,
-              address: adress,
-            },
-          },
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${access}`,
-            },
-          }
-        );
+        const response = modify
+          ? await axios.put(
+              "/profile/",
+              {
+                picture: data.profile_pic,
+                nin: data.nin,
+                phone_number: data.phone_number,
+                birth_date: data.birth_date,
+                passport_number: data.passport_number,
+                passport_expiration_date: data.passport_expiration_date,
+                birth_certificate_number: data.birth_certificate_number,
+                files: data.files,
+                address: data.address,
+                municipal: data.municipal,
+                wilaya: data.wilaya,
+                companion: {
+                  first_name: firstName,
+                  last_name: lastName,
+                  birth_date: userBirthDate,
+                  nin: nin,
+                  passport_number: passportNumber,
+                  passport_expiration_date: passportExp,
+                  birth_certificate_number: birthCertificateNumber,
+                  address: adress,
+                },
+              },
+              {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                  Authorization: `Bearer ${access}`,
+                },
+              }
+            )
+          : await axios.post(
+              "/profile/",
+              {
+                picture: data.profile_pic,
+                nin: data.nin,
+                phone_number: data.phone_number,
+                birth_date: data.birth_date,
+                passport_number: data.passport_number,
+                passport_expiration_date: data.passport_expiration_date,
+                birth_certificate_number: data.birth_certificate_number,
+                files: data.files,
+                address: data.address,
+                municipal: data.municipal,
+                wilaya: data.wilaya,
+                companion: {
+                  first_name: firstName,
+                  last_name: lastName,
+                  birth_date: userBirthDate,
+                  nin: nin,
+                  passport_number: passportNumber,
+                  passport_expiration_date: passportExp,
+                  birth_certificate_number: birthCertificateNumber,
+                  address: adress,
+                },
+              },
+              {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                  Authorization: `Bearer ${access}`,
+                },
+              }
+            );
+
         console.log(response.data);
 
-        if (response.status === 201) {
+        if (response.status === 201 || response.status === 200) {
+          setAlertSuc(true);
+          setErr("Your request has been sent successfully");
+          hideAlert();
           localStorage.setItem("Status", "P");
           navigate("/home/message");
         }
       } catch (error) {
+        const errorData = error.response.data;
+        let errorMessage = "";
+
+        Object.keys(errorData).some((key) => {
+          if (Object.prototype.hasOwnProperty.call(errorData, key)) {
+            errorMessage = errorData[key][0];
+            return true;
+          }
+          return false;
+        });
+        setAlertErr(true);
+        setErr("An error occurred, " + errorMessage);
+        hideAlert();
         console.error("Error:", error);
       }
     } else {
-      alert("Please fill all the fields with valid entry");
+      setAlertInfo(true);
+      setErr("Please fill all the fields with valid entry");
+      hideAlert();
     }
   };
 
   return (
     <div className="auth-body">
+      {alertErr && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="error"
+        >
+          {err}
+        </Alert>
+      )}
+      {alertsuc && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="success"
+        >
+          {err}
+        </Alert>
+      )}
+
+      {alertInfo && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="info"
+        >
+          {err}
+        </Alert>
+      )}
       <Link to="/Participate">
         <ArrowBackIcon fontSize="large" sx={{ mt: 4, ml: 4 }} />
       </Link>

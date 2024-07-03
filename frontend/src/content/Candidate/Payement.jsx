@@ -2,24 +2,30 @@ import { Box } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PayementImg from "../../assets/PayementImg.svg";
-import CreditCrad from "../../assets/CreditCard.png";
-import AddFile from "../../assets/AddFile.png";
-import TaskIcon from "@mui/icons-material/Task";
 import axios from "../../Api/base";
 import UploadOutlinedIcon from "@mui/icons-material/UploadOutlined";
-const Number = /^\d{9}$/;
+import Alert from "@mui/material/Alert";
 
 const Payement = () => {
-  const [transactionNumber, setTransactionNumber] = useState("");
-  const [validTransactionNumber, setValidTransactionNumber] = useState(false);
-  const [transactionNumberFocus, setTransactionNumberFocus] = useState(false);
+  //alert status
+  const [alertsuc, setAlertSuc] = useState(false);
+  const [alertErr, setAlertErr] = useState(false);
+  const [alertInfo, setAlertInfo] = useState(false);
+  const [err, setErr] = useState("");
 
+  const hideAlert = (nav) => {
+    setTimeout(() => {
+      setAlertSuc(false);
+      setAlertErr(false);
+      setAlertInfo(false);
+
+      if (nav) {
+        navigate("/Home/Reservation");
+      }
+    }, 3000);
+  };
   //File
   const [selectedFile, setSelectedFile] = useState(null);
-
-  useEffect(() => {
-    setValidTransactionNumber(Number.test(transactionNumber));
-  }, [transactionNumber, validTransactionNumber]);
 
   const navigate = useNavigate();
   const handleLogOut = () => {
@@ -47,19 +53,85 @@ const Payement = () => {
         );
         console.log(response);
 
-        if (response.status === 201 && response.data.success) {
-          alert("validated succesfully");
+        if (
+          response.status === 201 ||
+          response.data.success ||
+          response.status === 200
+        ) {
+          setAlertSuc(true);
+          setErr("Payment validated successfully");
+          hideAlert(true);
           navigate("/Home/Reservation");
         }
       } catch (error) {
-        // Handle errors here
+        setAlertErr(true);
+        setErr(
+          "Inalid credentials, please upload the file sent to you by email"
+        );
+        hideAlert(false);
         console.error("Error:", error);
       }
+    } else {
+      setAlertInfo(true);
+      setErr("Please upload a file");
+      hideAlert(false);
     }
   };
 
   return (
     <Box sx={{ height: "100%", width: "100%" }}>
+      {alertErr && (
+        <Alert
+          sx={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+            zIndex: 1000,
+          }}
+          severity="error"
+        >
+          {err}
+        </Alert>
+      )}
+      {alertsuc && (
+        <Alert
+          sx={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+            zIndex: 1000,
+          }}
+          severity="success"
+        >
+          {err}
+        </Alert>
+      )}
+
+      {alertInfo && (
+        <Alert
+          sx={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+            zIndex: 1000,
+          }}
+          severity="info"
+        >
+          {err}
+        </Alert>
+      )}
       <Box
         style={{
           height: "120px",
@@ -150,7 +222,10 @@ const Payement = () => {
               />
               <label htmlFor="PDFbutton" style={{ width: "100%" }}>
                 <UploadOutlinedIcon
-                  sx={{ mr: 2, color: "rgb(0, 0, 0, 0.5)" }}
+                  sx={{
+                    mr: 2,
+                    color: selectedFile ? "green" : "rgb(0, 0, 0, 0.5)",
+                  }}
                 />
                 {selectedFile ? "File uploaded" : "Upload receipt (.pdf) "}
               </label>

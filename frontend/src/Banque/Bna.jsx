@@ -7,12 +7,26 @@ import { Link, useNavigate } from "react-router-dom";
 import { FaIdCard } from "react-icons/fa";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import BNAImage from "../assets/BNA-bank.jpg";
+import Alert from "@mui/material/Alert";
 
 const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]+$/;
 const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const ninRegex = /^[0-9]{18}$/; // Assuming NIN consists of 9 digits
 
 function Bna() {
+  //alert status
+  const [alertsuc, setAlertSuc] = useState(false);
+  const [alertErr, setAlertErr] = useState(false);
+  const [alertInfo, setAlertInfo] = useState(false);
+  const [err, setErr] = useState("");
+
+  const hideAlert = () => {
+    setTimeout(() => {
+      setAlertSuc(false);
+      setAlertErr(false);
+      setAlertInfo(false);
+    }, 3000);
+  };
   const [submitted, setSubmitted] = useState(false);
   // First name states
   const [firstName, setFirstName] = useState("");
@@ -120,19 +134,78 @@ function Bna() {
         console.log("here");
 
         if (response.status === 201 && response.data.success) {
-          console.log("Success");
+          setAlertSuc(true);
+          setErr("Transaction successful");
+          hideAlert();
         }
       } catch (error) {
         // Handle errors here
         console.error("Error:", error);
+        setAlertErr(true);
+        setErr("Transaction failed");
+        hideAlert();
       }
     } else {
-      alert("Please fill all the fields with valid entry");
+      setAlertInfo(true);
+      setErr("Please fill in all fields correctly");
+      hideAlert();
     }
   };
 
   return (
     <Box sx={{}}>
+      {alertErr && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="error"
+        >
+          {err}
+        </Alert>
+      )}
+      {alertsuc && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="success"
+        >
+          {err}
+        </Alert>
+      )}
+
+      {alertInfo && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="info"
+        >
+          {err}
+        </Alert>
+      )}
       <Box
         sx={{
           position: "absolute",

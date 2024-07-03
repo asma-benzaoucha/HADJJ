@@ -30,6 +30,8 @@ import PatientHealthReview from "./content/Doctor/PatientHealthReview";
 import Bna from "./Banque/Bna";
 import Reservation from "./content/Candidate/Reservation";
 import HotelReservation from "./content/Candidate/HotelReservation";
+import AboutUs from "./content/LandingPage/AboutUs";
+import WinnersTable from "./Components/WinnersTable";
 
 function App() {
   return (
@@ -37,6 +39,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route exact path="/" element={<LandingPage />} />
+          <Route path="/AboutUs" element={<AboutUs />} />
           <Route path="/BNA" element={<Bna />} />
 
           <Route
@@ -67,6 +70,7 @@ function App() {
             <Route path="Admins" element={<Admins />} />
             <Route path="DrawType" element={<DrawType />} />
             <Route path="Grouping" element={<Grouping />} />
+            <Route path="Winners" element={<WinnersTable />} />
           </Route>
           <Route path="/Doctor" element={<DoctorInterface />}>
             <Route index element={<DashboardD />} />

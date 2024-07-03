@@ -5,7 +5,7 @@ import { grey } from "@mui/material/colors";
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../../Api/base";
-import { Typography, createTheme, ThemeProvider } from "@mui/material";
+import { createTheme, ThemeProvider } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import AddIcon from "@mui/icons-material/Add";
@@ -14,15 +14,26 @@ import CloseIcon from "@mui/icons-material/Close";
 import MailIcon from "@mui/icons-material/Mail";
 import PhoneIcon from "@mui/icons-material/Phone";
 import NewDoctor from "./NewDoctor";
+import Alert from "@mui/material/Alert";
 
 const Doctors = () => {
   const accessToken = localStorage.getItem("accessToken");
+  const [fetched, setFetched] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [addDoc, setAddDoc] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
   const [doctors, setDoctors] = useState([]);
   const [daysOff, setDaysOff] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [alertsuc, setAlertSuc] = useState(false);
+  const [alertErr, setAlertErr] = useState(false);
+  const [err, setErr] = useState("");
+
+  const hideAlert = () => {
+    setTimeout(() => {
+      setAlertSuc(false);
+      setAlertErr(false);
+    }, 3000);
+  };
 
   const renderSchedule = () => {
     if (!selectedUser) return null;
@@ -56,29 +67,29 @@ const Doctors = () => {
         });
         console.log("fetch doctor response", response);
 
-        const formattedData = response.data.map((admin, index) => ({
+        const formattedData = response.data.map((admin) => ({
           profile_pic: admin.profile_pic,
-          id: index,
+          id: admin.user.id,
           name: `${admin.user.first_name} ${admin.user.last_name}`,
           gender: admin.user.gender,
           wilaya: admin?.wilaya?.name,
           number: admin?.wilaya?.id, // You need to specify how to get the number for each admin
           email: admin.user.email,
           days_off: admin.work_schedule,
-          availableTime: admin.work_schedule[0].times,
+          availableTime: admin.work_schedule[0]?.times,
         }));
 
         setDoctors(formattedData);
         console.log("the admin new data", doctors);
+        setFetched(true);
       } catch (error) {
         console.error("Error:", error);
       }
     };
     fetchAdmins();
 
-    console.log("deleted in the fetch admin", deleted);
-    //console.log("addAdmin in the fetch admin", addAdmin);
-  }, []);
+    console.log("deleted in the fetch doctor", deleted);
+  }, [isModalOpen, deleted]);
 
   const myTheme = createTheme({
     components: {
@@ -171,72 +182,21 @@ const Doctors = () => {
     navigate("/");
   };
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  /*const handleCloseModal = () => {
-    //setSelectedUser(null);
-    setIsModalOpen(false);
-
-    const fetchData = async () => {
-      try {
-        const response = await axios.get("/accounts/users", {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${accessToken}`, // Set the access token in the Authorization header
-          },
-        });
-        console.log(response);
-        setData(response.data);
-      } catch (error) {
-        // Handle network errors or Axios request errors
-        console.error("Error:", error);
-      }
-    };
-
-    fetchData();
-  };*/
-  const handleEditUser = () => {
-    setIsModalOpen(true);
-  };
-
-  /*const handleEdit = async (e) => {
-    e.preventDefault();
-    console.log(state);
-    try {
-      const response = await axios.patch(
-        `/accounts/admins/${selectedUser.id}/`,
-        { wilaya: parseInt(state) },
-
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
-      console.log(response);
-
-      if (response.status === 200) {
-        alert("Admin edited successfully");
-        setDeleted(!deleted);
-        handleCloseModal();
-      }
-    } catch (error) {
-      // Handle errors here
-      console.error("Error:", error);
-    }
-  };*/
-
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const [ConfirmDeletion, setConfirmDeletion] = useState(false);
+
+  const confirmDelete = () => {
+    setConfirmDeletion(true);
+  };
 
   const handleDelete = async (e) => {
     e.preventDefault();
-    console.log(selectedUser);
+    console.log("doctor to delete is ", selectedUser.id);
 
-    /* try {
+    try {
       const response = await axios.delete(
-        `/accounts/admins/${selectedUser.id}/`,
+        `/accounts/delete-medical-admin/${selectedUser.id}/`,
 
         {
           headers: {
@@ -247,14 +207,17 @@ const Doctors = () => {
       );
       console.log(response);
 
-      if (response.status === 201 && response.data.success) {
-        alert("Admin deleted successfully");
+      if (response.status === 200 && response.data.success) {
+        setAlertSuc(true);
+        setErr("Doctor deleted successfully");
+        hideAlert();
         setDeleted(!deleted);
       }
     } catch (error) {
-      // Handle errors here
-      console.error("Error:", error);
-    }*/
+      setAlertErr(true);
+      setErr("Error deleting Doctor");
+      hideAlert();
+    }
   };
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -262,6 +225,39 @@ const Doctors = () => {
 
   return (
     <>
+      {alertErr && (
+        <Alert
+          sx={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="error"
+        >
+          {err}
+        </Alert>
+      )}
+      {alertsuc && (
+        <Alert
+          sx={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="success"
+        >
+          {err}
+        </Alert>
+      )}
+
       <Box sx={{ height: "80%", width: "100%" }}>
         <Box
           sx={{
@@ -295,7 +291,7 @@ const Doctors = () => {
             </button>
             {selectedUser && (
               <button
-                onClick={handleDelete}
+                onClick={confirmDelete}
                 style={{
                   backgroundColor: "#121843",
                   height: "36px",
@@ -317,24 +313,6 @@ const Doctors = () => {
             )}
           </Stack>
           <div style={{ flex: 1 }} />
-          {selectedUser && (
-            <button
-              onClick={handleEditUser}
-              className="button"
-              style={{
-                backgroundColor: "rgba(231, 217, 202, 0.6)",
-                marginRight: isSmallScreen ? "10px" : "30px",
-                height: "46px",
-                width: isSmallScreen ? "110px" : "140px",
-                fontSize: isSmallScreen ? "10px" : "18px",
-                borderRadius: 30,
-                color: "black",
-                fontWeight: "bold",
-              }}
-            >
-              Edit
-            </button>
-          )}
 
           <button
             onClick={handleLogOut}
@@ -365,6 +343,7 @@ const Doctors = () => {
           >
             <ThemeProvider theme={myTheme}>
               <DataGrid
+                loading={!fetched}
                 columns={columns}
                 onRowSelectionModelChange={handleSelectionChange}
                 rows={doctors}
@@ -554,6 +533,87 @@ const Doctors = () => {
           }}
         >
           <NewDoctor onClose={handleCloseModal} />
+        </Box>
+      )}
+      {ConfirmDeletion && (
+        <Box
+          sx={{
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "100%",
+            zIndex: "999",
+            backgroundColor: "rgba(61, 61, 61, 0.22)",
+            backdropFilter: "blur(10px)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              transform: "translate(-50%,-50%)",
+              left: "50%",
+              top: "50%",
+              width: {
+                xs: "95%",
+                sm: "500px",
+              },
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              overflowY: "auto",
+              p: { xs: 1, sm: 2 },
+              borderRadius: 10,
+              backgroundColor: "rgba(255, 255, 255, 1)",
+              maxHeight: "95%",
+              gap: "20px",
+            }}
+          >
+            <h2> Delete Doctor</h2>
+            <CloseIcon
+              onClick={() => {
+                setConfirmDeletion(false);
+              }}
+              sx={{
+                position: "absolute",
+                top: "24px",
+                right: "24px",
+                cursor: "pointer",
+                ":hover": { color: "red" },
+              }}
+            />
+            <span>
+              Are you sure that you want to delete {selectedUser.name} ?
+            </span>
+            <form
+              className="auth-form Login-form"
+              style={{
+                width: isSmallScreen ? "90%" : "400px",
+                borderRadius: "10px",
+                padding: "20px",
+              }}
+              onSubmit={(e) => {
+                e.preventDefault;
+              }}
+            >
+              <div className="sub-but">
+                <button
+                  className="button"
+                  onClick={(e) => {
+                    setConfirmDeletion(false);
+                    handleDelete(e);
+                  }}
+                  style={{ width: "200px" }}
+                >
+                  Confirm
+                </button>
+              </div>
+            </form>
+          </Box>
         </Box>
       )}
     </>

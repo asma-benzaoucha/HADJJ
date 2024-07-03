@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Typography,
@@ -8,18 +8,35 @@ import {
   FormControlLabel,
   FormGroup,
   IconButton,
+  Select,
+  MenuItem,
+  ListItemIcon,
 } from "@mui/material";
-import { Add, Remove, CloudUpload } from "@mui/icons-material";
+import { Add, Remove } from "@mui/icons-material";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import BloodtypeIcon from "@mui/icons-material/Bloodtype";
 import CloseIcon from "@mui/icons-material/Close";
 import axios from "../../Api/base";
 import PropTypes from "prop-types";
+import Alert from "@mui/material/Alert";
 
 const PatientHealthReview = ({ onClose, user }) => {
   PatientHealthReview.propTypes = {
     onClose: PropTypes.func.isRequired,
     user: PropTypes.object.isRequired,
+  };
+
+  const [alertsuc, setAlertSuc] = useState(false);
+  const [alertErr, setAlertErr] = useState(false);
+  const [alertInfo, setAlertInfo] = useState(false);
+  const [err, setErr] = useState("");
+
+  const hideAlert = () => {
+    setTimeout(() => {
+      setAlertSuc(false);
+      setAlertErr(false);
+      setAlertInfo(false);
+    }, 3000);
   };
 
   const [isSick, setIsSick] = useState(false);
@@ -91,58 +108,84 @@ const PatientHealthReview = ({ onClose, user }) => {
     setFile(event.target.files[0]);
   };
 
-  const handleRequest = async (e) => {
+  const handleRequest = async (accepted) => {
     console.log("user");
+
     const data = [
       {
+        files: file,
         blood_type: bloodType,
         is_sick: isSick,
         is_healthy: !isSick,
-        diseases: diseases.map((disease) => disease.name),
-        treatments: diseases.reduce(
-          (acc, curr) => acc.concat(curr.treatments),
-          []
-        ),
         medical_opinion: medicalOpinion,
-        is_accepted: isAccepted,
+        is_accepted: accepted,
+        ...(isSick && {
+          diseases: diseases.map((disease) => disease.name),
+          treatments: diseases.reduce(
+            (acc, curr) => acc.concat(curr.treatments),
+            []
+          ),
+        }),
       },
     ];
     console.log("data", data);
-
-    console.log("user", user);
-    const accessToken = localStorage.getItem("accessToken");
-    try {
-      const response = await axios.post(
-        `/health_reviews/${user.id}/add-patient-health-review/`,
-        {
-          blood_type: bloodType,
-          is_sick: isSick,
-          is_healthy: !isSick,
-          diseases: data[0].diseases,
-          treatments: data[0].treatments,
-          medical_opinion: medicalOpinion,
-          is_accepted: isAccepted,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
+    console.log("is in below data", accepted);
+    if (
+      bloodType &&
+      medicalOpinion &&
+      file &&
+      (isSick ? data[0].diseases.length > 0 : true)
+    ) {
+      const accessToken = localStorage.getItem("accessToken");
+      try {
+        const response = await axios.post(
+          `/health_reviews/${user.id}/add-patient-health-review/`,
+          {
+            blood_type: bloodType,
+            files: file,
+            is_sick: isSick,
+            is_healthy: !isSick,
+            medical_opinion: medicalOpinion,
+            is_accepted: accepted,
+            ...(isSick && {
+              diseases: data[0].diseases,
+              treatments: data[0].treatments,
+            }),
           },
+
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        if (response.status === 201) {
+          console.log(response);
+          setAlertSuc(true);
+          setErr("Review added successfully");
+          hideAlert();
+          onClose();
         }
-      );
-      if (response.status === 200) {
-        console.log(response);
-        alert("Request successful");
-        onClose();
+      } catch (error) {
+        console.error("Error:", error);
+        setAlertErr(true);
+        setErr("Request failed : " + error?.response?.data.detail);
+
+        hideAlert();
       }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Request failed : Invalid cardinalities");
+    } else {
+      setAlertInfo(true);
+      setErr("Please fill all the fields");
+      hideAlert();
     }
   };
 
   const handleExit = () => {
     // Implement exit action
   };
+
+  console.log("isaccepted", isAccepted);
 
   return (
     <Box
@@ -162,6 +205,60 @@ const PatientHealthReview = ({ onClose, user }) => {
         boxShadow: `0px 0px 5px rgba(0, 0, 0, 0.2)` /* Apply shadow with border color */,
       }}
     >
+      {alertErr && (
+        <Alert
+          sx={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+            width: "100%",
+            zIndex: 1000,
+          }}
+          severity="error"
+        >
+          {err}
+        </Alert>
+      )}
+      {alertsuc && (
+        <Alert
+          sx={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+            width: "100%",
+            zIndex: 1000,
+          }}
+          severity="success"
+        >
+          {err}
+        </Alert>
+      )}
+      {alertInfo && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+            width: "100%",
+          }}
+          severity="info"
+        >
+          {err}
+        </Alert>
+      )}
       <Typography
         variant="h5"
         align="center"
@@ -294,16 +391,12 @@ const PatientHealthReview = ({ onClose, user }) => {
           </Box>
         )}
         <Box sx={{ width: "368px", margin: "auto" }}>
-          <TextField
-            placeholder="Blood Type"
+          <Select
             value={bloodType}
             onChange={handleBloodTypeChange}
+            displayEmpty
             InputProps={{
-              endAdornment: (
-                <IconButton disabled>
-                  <BloodtypeIcon sx={{ color: "red" }} />
-                </IconButton>
-              ),
+              endAdornment: <BloodtypeIcon sx={{ color: "red" }} />,
             }}
             sx={{
               marginTop: "10px",
@@ -312,8 +405,30 @@ const PatientHealthReview = ({ onClose, user }) => {
               boxShadow: `0px 0px 5px #AB7595`,
               width: "100%",
               height: "53px",
+              position: "relative",
             }}
-          />
+          >
+            <MenuItem value="" disabled>
+              <ListItemIcon>
+                <BloodtypeIcon
+                  sx={{
+                    color: "red",
+                    position: "absolute",
+                    top: "25%",
+                  }}
+                />
+              </ListItemIcon>
+              Blood Type
+            </MenuItem>
+            <MenuItem value="A+">A+</MenuItem>
+            <MenuItem value="A-">A-</MenuItem>
+            <MenuItem value="B+">B+</MenuItem>
+            <MenuItem value="B-">B-</MenuItem>
+            <MenuItem value="AB+">AB+</MenuItem>
+            <MenuItem value="AB-">AB-</MenuItem>
+            <MenuItem value="O+">O+</MenuItem>
+            <MenuItem value="O-">O-</MenuItem>
+          </Select>
 
           <label
             htmlFor="file-upload"
@@ -326,12 +441,15 @@ const PatientHealthReview = ({ onClose, user }) => {
               justifyContent: "space-between",
               borderRadius: "20px",
               boxShadow: `0px 0px 5px #AB7595`,
+              cursor: "pointer",
             }} /* Apply shadow with border color */
           >
             <span style={{ marginLeft: "10px", color: "rgba(0,0,0,0.4)" }}>
-              Upload File
+              {file ? "file Uploaded" : "Upload file"}
             </span>
-            <FileDownloadIcon sx={{ color: "#AB7595", marginRight: "10px" }} />
+            <FileDownloadIcon
+              sx={{ color: file ? "green" : "#AB7595", marginRight: "10px" }}
+            />
             <input
               id="file-upload"
               type="file"
@@ -359,8 +477,8 @@ const PatientHealthReview = ({ onClose, user }) => {
             variant="contained"
             color="primary"
             onClick={() => {
-              setIsAccepted(true);
-              handleRequest();
+              handleRequest(true);
+              console.log("accepted");
             }}
             sx={{
               marginRight: "10px",
@@ -375,8 +493,7 @@ const PatientHealthReview = ({ onClose, user }) => {
             variant="contained"
             color="error"
             onClick={() => {
-              setIsAccepted(false);
-              handleRequest();
+              handleRequest(false);
             }} // handleRefuse(
             sx={{
               width: "160px",

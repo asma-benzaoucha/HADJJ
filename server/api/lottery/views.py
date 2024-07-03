@@ -18,6 +18,7 @@ from .algorithms.R import _registration_priority
 from .algorithms.A import _age_category
 from municipal_wilaya.models import Municipal
 from municipal_wilaya.models import Seats
+from django.db.models import Q
 
 
 # @api_view(["POST"])
@@ -166,10 +167,10 @@ def is_lottery_done(request):
     wilaya = user.admin_profile.object_id
     municipals = Municipal.objects.filter(wilaya=wilaya)
     done = any(municipal.is_lottery_done for municipal in municipals)
-    alll = False
-    if not done:
+    
+    
         # some municipals are not done if alll is f
-        alll = all(not municipal.is_lottery_done for municipal in municipals)
+    alll = all(not municipal.is_lottery_done for municipal in municipals) or all(municipal.is_lottery_done for municipal in municipals)
         
     return Response({"done": done, "all": alll}, status=status.HTTP_200_OK)
 
@@ -218,6 +219,7 @@ def get_municipals_data(request):
 @permission_classes([IsAdminUser])
 def lotter_participants(request):
     data = request.data
+    print(data)
     municipals = data.get("municipals")
     if municipals is None:
         return Response(
@@ -353,3 +355,76 @@ def reset_lottery(_):
         status=UserStatus.Status.PENDING.value,
     )
     return Response({"success": True}, status=status.HTTP_200_OK)
+
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def get_all_winners_reserve(request):
+    user = request.user
+    wilaya = user.admin_profile.object_id
+    print(wilaya)
+    # winners = list(
+    #     ParticipantStatusPhase.objects.filter(
+    #         participant__personal_profile__wilaya=wilaya,
+    #         participant__status__process=not Q(UserStatus.Process.LOTTERY | UserStatus.Process.INSCRIPTION),
+    #     ).values_list("participant", flat=True)
+    # )
+    winners = ParticipantStatusPhase.objects.filter(
+    Q(participant__personal_profile__wilaya=wilaya)
+    & ~Q(participant__status__process__in=[UserStatus.Process.LOTTERY, UserStatus.Process.INSCRIPTION])
+).values_list("participant", flat=True)
+    reserve = list(
+        ParticipantStatusPhase.objects.filter(
+            participant__personal_profile__wilaya=wilaya,
+            participant__status__status=UserStatus.Status.IN_RESERVE,
+            participant__status__process=UserStatus.Process.LOTTERY
+        ).values_list("participant", flat=True)
+    )
+    print(winners)
+    print(reserve)
+    try:
+        # users will be like {id: user_object}
+        users_w = User.objects.filter(id__in=winners).in_bulk()
+        personal_profiles_w = PersonalProfile.objects.filter(user__id__in=winners).in_bulk(field_name="user_id")
+
+        users_r = User.objects.filter(id__in=reserve).in_bulk()
+        personal_profiles_r = PersonalProfile.objects.filter(user__id__in=reserve).in_bulk(field_name="user_id")
+
+        total_winners = []
+        total_reserve = []
+
+        for user_id in winners:
+            user = users_w.get(user_id)
+            profile = personal_profiles_w.get(user_id)
+            if user:
+                total_winners.append(
+                    {
+                        "nin": profile.nin if profile else None,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                    }
+                )
+        for user_id in reserve:
+            user = users_r.get(user_id)
+            profile = personal_profiles_r.get(user_id)
+            if user:
+                total_reserve.append(
+                    {
+                        "nin": profile.nin if profile else None,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                    }
+                )
+        response = {
+            "winners": total_winners,
+            "reserve": total_reserve,
+        }
+        return Response(response, status=status.HTTP_200_OK)
+        
+    except User.DoesNotExist:
+        return Response(
+            {"success": False, "msg": "No users found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+

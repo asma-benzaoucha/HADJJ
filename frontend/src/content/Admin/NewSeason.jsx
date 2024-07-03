@@ -2,10 +2,8 @@ import { useState, useEffect } from "react";
 import { Box } from "@mui/material";
 import ReplayIcon from "@mui/icons-material/Replay";
 import GroupsIcon from "@mui/icons-material/Groups";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CloseIcon from "@mui/icons-material/Close";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
-import { useNavigate } from "react-router-dom";
 import axios from "../../Api/base";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -14,9 +12,8 @@ import PropTypes from "prop-types";
 import CreditCardOutlinedIcon from "@mui/icons-material/CreditCardOutlined";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import dayjs from "dayjs";
+import Alert from "@mui/material/Alert";
 
-const today = dayjs();
-const validDate = /^\d{4}-(0?[1-9]|1[0-2])-(0?[1-9]|[12]\d|3[01])$/;
 const price = /^[0-9]+$/;
 
 const NewSeason = ({ onClose }) => {
@@ -25,7 +22,19 @@ const NewSeason = ({ onClose }) => {
   };
   //const { auth } = useAuth();
 
-  const navigate = useNavigate();
+  //alert status
+  const [alertsuc, setAlertSuc] = useState(false);
+  const [alertErr, setAlertErr] = useState(false);
+  const [alertInfo, setAlertInfo] = useState(false);
+  const [err, setErr] = useState("");
+
+  const hideAlert = () => {
+    setTimeout(() => {
+      setAlertSuc(false);
+      setAlertErr(false);
+      setAlertInfo(false);
+    }, 3000);
+  };
 
   //Year
   const [year, setYear] = useState("");
@@ -37,14 +46,16 @@ const NewSeason = ({ onClose }) => {
   const [totalPFocus, setTotalPFocus] = useState(false);
 
   //Inscription deadline
-  const [inscDeadline, setInscDeadline] = useState("");
+  const [inscDeadline, setInscDeadline] = useState(null);
   const [validInscDeadline, setValidInscDeadline] = useState(false);
   const [inscFocus, setInscFocus] = useState(false);
+  let inscriptionEnd = dayjs(inscDeadline?.$d).format("YYYY-MM-DD");
 
   //Procedure deadline
-  const [procDeadline, setProcDeadline] = useState("");
+  const [procDeadline, setProcDeadline] = useState(null);
   const [validProcDeadline, setValidProcDeadline] = useState(false);
   const [procFocus, setProcFocus] = useState(false);
+  let procedureEnd = dayjs(procDeadline?.$d).format("YYYY-MM-DD");
   //Number of phases
   const [phaseNum, setPhaseNum] = useState("");
   const [validPhaseNum, setValidPhaseNum] = useState(false);
@@ -66,7 +77,7 @@ const NewSeason = ({ onClose }) => {
 
   useEffect(() => {
     // Year validation
-    if (year.length >= 4 && parseInt(year) >= 2024) {
+    if (year.length >= 4 && parseInt(year) >= 2000) {
       setValidYear(true);
     } else {
       setValidYear(false);
@@ -76,20 +87,27 @@ const NewSeason = ({ onClose }) => {
   useEffect(() => {
     // Inscription deadline validation
 
-    const procDateValid = procDeadline
+    if (inscDeadline && procDeadline) {
+      setValidInscDeadline(inscriptionEnd < procedureEnd);
+    }
+
+    /*const procDateValid = procDeadline
       ? new Date(inscDeadline) < new Date(procDeadline)
       : true;
 
-    setValidInscDeadline(validDate.test(inscDeadline) && procDateValid);
+    setValidInscDeadline(validDate.test(inscDeadline) && procDateValid);*/
   }, [inscDeadline, procDeadline]);
 
   useEffect(() => {
+    if (inscDeadline && procDeadline) {
+      setValidProcDeadline(inscriptionEnd < procedureEnd);
+    }
     // Procedure deadline validation
-    const inscDateValid = inscDeadline
+    /*const inscDateValid = inscDeadline
       ? new Date(inscDeadline) < new Date(procDeadline)
       : true;
 
-    setValidProcDeadline(validDate.test(procDeadline) && inscDateValid);
+    setValidProcDeadline(validDate.test(procDeadline) && inscDateValid);*/
   }, [procDeadline, inscDeadline]);
 
   useEffect(() => {
@@ -97,9 +115,9 @@ const NewSeason = ({ onClose }) => {
     const numRegex = /^[0-9]+$/;
     const isValidPhaseNum =
       numRegex.test(phaseNum) &&
-      (!inscDeadline ||
-        !procDeadline || // No dates typed yet
-        (new Date(procDeadline) - new Date(inscDeadline)) /
+      (!inscriptionEnd ||
+        !procedureEnd || // No dates typed yet
+        (new Date(procedureEnd) - new Date(inscriptionEnd)) /
           (1000 * 60 * 60 * 24) /
           phaseNum >
           15);
@@ -112,6 +130,60 @@ const NewSeason = ({ onClose }) => {
     const validTotalP = numRegex.test(totalP);
     setValidTotalP(validTotalP);
   }, [totalP]);
+
+  //File data
+  const [data, setData] = useState([]);
+
+  //handle CSV file
+  const handleCSVChange = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const result = event.target.result;
+      const data = parseCSV(result);
+      setData(data);
+    };
+
+    if (file) {
+      reader.readAsText(file);
+    }
+  };
+
+  const parseCSV = (csv) => {
+    const rows = csv
+      .split("\n")
+      .map((row) => row.trim())
+      .filter((row) => row !== ""); // Trim whitespace and remove empty rows
+    const headers = rows[0].split(","); // Extract headers (assuming they are separated by commas)
+    const data = rows.slice(1).map((row) => {
+      const values = row.split(","); // Split row into values (assuming they are separated by commas)
+      const rowData = {};
+      headers.forEach((header, index) => {
+        rowData[header] = values[index] ? values[index].trim() : ""; // Trim whitespace and handle empty values
+      });
+      return rowData;
+    });
+    return data;
+  };
+
+  const [NewData, setNewData] = useState([]);
+
+  useEffect(() => {
+    const newData = data.map((item) => ({
+      wilaya: parseInt(item.wilaya),
+      available_seats: parseInt(item.available_seats),
+      extra_seats: parseInt(item.extra_seats),
+    }));
+
+    setNewData(NewData);
+    if (newData.length > 0) {
+      console.log("All Data:");
+      console.log(newData);
+    } else {
+      console.log("No data");
+    }
+  }, [data]);
 
   const handleSubmit = async (e) => {
     console.log("entered");
@@ -127,8 +199,8 @@ const NewSeason = ({ onClose }) => {
     ) {
       //***********************************Algorithme */
 
-      const inscriptionDeadline = new Date(inscDeadline);
-      const procedureDeadline = new Date(procDeadline);
+      const inscriptionDeadline = new Date(inscriptionEnd);
+      const procedureDeadline = new Date(procedureEnd);
 
       // Calculate the total number of days in the period
       const totalDays =
@@ -182,9 +254,9 @@ const NewSeason = ({ onClose }) => {
       const payload = {
         year: yearInteger,
         total_pilgrims: totalPInteger,
-        inscription_deadline: inscDeadline,
-        procedure_deadline: procDeadline,
-        wilayas_seats: newData,
+        inscription_deadline: inscriptionEnd,
+        procedure_deadline: procedureEnd,
+        wilayas_seats: NewData,
         phases: phase,
         price: parseInt(seasonFees),
       };
@@ -198,76 +270,85 @@ const NewSeason = ({ onClose }) => {
           },
         });
         if (response.status === 201) {
-          alert("success");
-          navigate("/Admin/Season");
-          //onclose=true
-
-          // Check for successful login response data
+          setAlertSuc(true);
+          setErr("Season created successfully");
+          hideAlert();
+          onClose();
         } else {
-          alert(response.error);
-          console.log("here is undefined?");
+          setAlertErr(true);
+          setErr(
+            "Error while trying creating new season, please try again later"
+          );
+          hideAlert();
         }
       } catch (error) {
+        setAlertErr(true);
+        setErr("Server error, please try again later");
+        hideAlert();
         console.error("Error:", error);
-        alert("Request failed : Invalid cardenalities");
       }
-    }
-  };
-
-  //File data
-  const [data, setData] = useState([]);
-
-  //handle CSV file
-  const handleCSVChange = (e) => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-
-    reader.onload = (event) => {
-      const result = event.target.result;
-      const data = parseCSV(result);
-      setData(data);
-    };
-
-    if (file) {
-      reader.readAsText(file);
-    }
-  };
-
-  const parseCSV = (csv) => {
-    const rows = csv
-      .split("\n")
-      .map((row) => row.trim())
-      .filter((row) => row !== ""); // Trim whitespace and remove empty rows
-    const headers = rows[0].split(","); // Extract headers (assuming they are separated by commas)
-    const data = rows.slice(1).map((row) => {
-      const values = row.split(","); // Split row into values (assuming they are separated by commas)
-      const rowData = {};
-      headers.forEach((header, index) => {
-        rowData[header] = values[index] ? values[index].trim() : ""; // Trim whitespace and handle empty values
-      });
-      return rowData;
-    });
-    return data;
-  };
-
-  const newData = data.map((item) => ({
-    wilaya: parseInt(item.wilaya),
-    available_seats: parseInt(item.available_seats),
-    extra_seats: parseInt(item.extra_seats),
-  }));
-
-  useEffect(() => {
-    if (newData.length > 0) {
-      console.log("All Data:");
-      console.log(newData);
     } else {
-      console.log("No data available.");
+      console.log("rani hna");
+      setAlertInfo(true);
+      setErr("Please fill all the fields correctly");
+      hideAlert();
     }
-  }, [newData]);
+  };
+
   //---------------------------------------------
 
   return (
     <>
+      {alertErr && (
+        <Alert
+          sx={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="error"
+        >
+          {err}
+        </Alert>
+      )}
+      {alertsuc && (
+        <Alert
+          sx={{
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="success"
+        >
+          {err}
+        </Alert>
+      )}
+
+      {alertInfo && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="info"
+        >
+          {err}
+        </Alert>
+      )}
       <Box
         sx={{
           position: "absolute",
@@ -389,51 +470,106 @@ const NewSeason = ({ onClose }) => {
               </div>
             )}
 
+            {/* ----------------- Date of inscription deadline ----------------- */}
             <div
+              style={{ position: "relative" }}
               className={
-                !validInscDeadline && inscDeadline && !inscFocus
+                !validInscDeadline && inscDeadline && !inscFocus && procDeadline
                   ? "invalid-input"
                   : "input"
               }
             >
-              <CalendarMonthIcon className="icon" />
-              <input
-                type="text"
-                placeholder="YY-MM-DD"
-                onChange={(e) => setInscDeadline(e.target.value)}
-                onFocus={() => setInscFocus(true)}
-                onBlur={() => setInscFocus(false)}
-                required
-              />
-            </div>
-            {!validInscDeadline && inscDeadline && !inscFocus && (
-              <div className="error-container">
-                <span className="error-msg">invalid Date </span>
-              </div>
-            )}
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  onFocus={() => setInscFocus(true)}
+                  onBlur={() => setInscFocus(false)}
+                  value={inscDeadline}
+                  onChange={(newValue) => setInscDeadline(newValue)}
+                  format={"DD/MM/YYYY"}
+                  //minDate={}
+                  sx={{
+                    "& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline":
+                      { border: "none" },
+                    "& input": {
+                      fontWeight: 400,
+                      fontSize: "16px",
+                      color: "black",
+                    },
+                  }}
+                  slotProps={{
+                    textField: {
+                      placeholder: "Inscription deadline ",
+                    },
 
+                    inputAdornment: {
+                      position: "start",
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+
+              {!validInscDeadline &&
+                inscDeadline &&
+                !inscFocus &&
+                procDeadline && (
+                  <span
+                    style={{ top: "45px", fontSize: "11px" }}
+                    className="error-msg"
+                  >
+                    Inscription deadline can not be after procedure deadline
+                  </span>
+                )}
+            </div>
+            {/* ----------------- Date of procedure deadline ----------------- */}
             <div
+              style={{ position: "relative" }}
               className={
-                !validProcDeadline && procDeadline && !procFocus
+                !validProcDeadline && procDeadline && !procFocus && inscDeadline
                   ? "invalid-input"
                   : "input"
               }
             >
-              <CalendarMonthIcon className="icon" />
-              <input
-                type="text"
-                placeholder="YY-MM-DD"
-                onChange={(e) => setProcDeadline(e.target.value)}
-                onFocus={() => setProcFocus(true)}
-                onBlur={() => setProcFocus(false)}
-                required
-              />
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  onFocus={() => setProcFocus(true)}
+                  onBlur={() => setProcFocus(false)}
+                  value={procDeadline}
+                  onChange={(newValue) => setProcDeadline(newValue)}
+                  format={"DD/MM/YYYY"}
+                  // minDate={dayjs()}
+                  sx={{
+                    "& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline":
+                      { border: "none" },
+                    "& input": {
+                      fontWeight: 400,
+                      fontSize: "16px",
+                      color: "black",
+                    },
+                  }}
+                  slotProps={{
+                    textField: {
+                      placeholder: "Procedure deadline ",
+                    },
+
+                    inputAdornment: {
+                      position: "start",
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+
+              {!validProcDeadline &&
+                procDeadline &&
+                !procFocus &&
+                inscDeadline && (
+                  <span
+                    style={{ top: "45px", fontSize: "11px" }}
+                    className="error-msg"
+                  >
+                    Procedure deadline can not be before inscription deadline
+                  </span>
+                )}
             </div>
-            {!validProcDeadline && procDeadline && !procFocus && (
-              <div className="error-container">
-                <span className="error-msg">Invalid date</span>
-              </div>
-            )}
 
             <div
               className={
@@ -465,53 +601,18 @@ const NewSeason = ({ onClose }) => {
               onChange={handleCSVChange}
               id="uploadButton"
             />
-            <label htmlFor="uploadButton">
-              Upload CSV file
-              <UploadFileIcon sx={{ ml: 3 }} />
-            </label>
-
-            {/* ----------------- Birthday input ----------------- 
-            <div
-              style={{ position: "relative", width: "350px" }}
-              className={
-                !validSeasonFees && seasonFees && !seasonFeesFocus
-                  ? "invalid-input"
-                  : "input"
-              }
+            <label
+              htmlFor="uploadButton"
+              style={{ color: "rgb(0, 0, 0, 0.6)" }}
             >
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  minDate={today}
-                  onFocus={() => setSeasonFeesFocus(true)}
-                  onBlur={() => setSeasonFeesFocus(false)}
-                  value={seasonFees}
-                  onChange={(newValue) => setSeasonFees(newValue)}
-                  format={"YYYY/MM/DD"}
-                  sx={{
-                    "& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline":
-                      { border: "none" },
-                    "& input": {
-                      fontWeight: 400,
-                      fontSize: "16px",
-                      color: "black",
-                    },
-                  }}
-                  slotProps={{
-                    textField: { placeholder: "Birth date" },
-
-                    inputAdornment: {
-                      position: "start",
-                    },
-                  }}
-                />
-              </LocalizationProvider>
-
-              {!validSeasonFees && seasonFees && !seasonFeesFocus && (
-                <span style={{ top: "45px" }} className="error-msg">
-                  you must be at least 18 years old
-                </span>
-              )}
-            </div> */}
+              <UploadFileIcon
+                sx={{
+                  mr: 2,
+                  color: data.length >= 1 ? "green" : "rgb(0, 0, 0, 0.7)",
+                }}
+              />
+              {data.length >= 1 ? "File uploaded" : "Upload the csv file"}
+            </label>
 
             <div className="sub-but">
               <button className="button" onClick={handleSubmit}>

@@ -21,6 +21,7 @@ const Grouping = () => {
   console.log("seats", x);
   const navigate = useNavigate();
   const theme = useTheme();
+
   const [clicked, setClicked] = useState(false);
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [selectedMunicipals, setSelectedMunicipals] = useState([]);
@@ -30,6 +31,7 @@ const Grouping = () => {
   const [openModal, setOpenModal] = useState(false);
   const [extra_seats, setExtraSeats] = useState(0);
   const [addedSeats, setAddedSeats] = useState(0);
+  const accessToken = localStorage.getItem("accessToken");
 
   const handleSelectMunicipal = (municipal) => {
     const municipalObject = {
@@ -60,7 +62,6 @@ const Grouping = () => {
   //fetch municipals
   const state = localStorage.getItem("wilaya_id");
   useEffect(() => {
-    const accessToken = localStorage.getItem("accessToken");
     const fetchData = async () => {
       try {
         const response = await axios.get("/lottery/municipals", {
@@ -172,24 +173,6 @@ const Grouping = () => {
             </button>
           )}
 
-          {!clicked && (
-            <button
-              className="button"
-              style={{
-                backgroundColor: "rgba(231, 217, 202, 0.6)",
-                marginRight: isSmallScreen ? "10px" : "30px",
-                height: "46px",
-                width: isSmallScreen ? "110px" : "140px",
-                fontSize: isSmallScreen ? "10px" : "18px",
-                borderRadius: 30,
-                color: "black",
-                fontWeight: "bold",
-                border: "1px solid black",
-              }}
-            >
-              Pass
-            </button>
-          )}
           {clicked && (
             <button
               onClick={() => {

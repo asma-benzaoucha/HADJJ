@@ -10,6 +10,7 @@ from .views import (
     # for email validation
     verify_email_validation_code,
     send_email_validation_code,
+    get_user_status
 )
 
 urlpatterns = [
@@ -24,4 +25,6 @@ urlpatterns = [
     ##############################
     path('email-validation-code', send_email_validation_code),
     path('email-validation', verify_email_validation_code), # this is for email validation
+
+    path('status', get_user_status, name='get_user_status')
 ]

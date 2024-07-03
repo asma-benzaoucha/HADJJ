@@ -8,6 +8,7 @@ import { useEffect } from "react";
 
 const Home = () => {
   const navigate = useNavigate();
+  const profile_pic = localStorage.getItem("profile_pic");
   const { auth } = useAuth();
   const name = localStorage.getItem("name");
   const phase = localStorage.getItem("process");
@@ -32,7 +33,7 @@ const Home = () => {
   useEffect(() => {
     const routes = {
       R: { R: "Message", P: "Reservation", C: "Message" },
-      L: { P: "Draw" },
+      L: { P: "Draw", R: "Message", I: "Message" },
       V: { P: "VisitMed" },
       P: { P: "payement" },
       I: { P: "Message" },
@@ -91,7 +92,8 @@ const Home = () => {
         >
           <Avatar
             onClick={handleclick}
-            src="/broken-image.jpg"
+            src={`data:image/png;base64,${profile_pic}`}
+            alt={name}
             sx={{
               width: { xs: "11vh", sm: "15vh" },
               height: { xs: "11vh", sm: "15vh" },

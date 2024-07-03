@@ -6,6 +6,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Gendericon from "../assets/GenderIcon.png";
 import axios from "../Api/base";
 import { Link, useNavigate } from "react-router-dom";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]+$/;
 const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -127,6 +128,9 @@ function Signup() {
 
   return (
     <div className="auth-body">
+      <Link to="/">
+        <ArrowBackIcon fontSize="large" sx={{ mt: 4, ml: 4 }} />
+      </Link>
       <Box
         sx={{
           position: "absolute",

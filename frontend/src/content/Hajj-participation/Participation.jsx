@@ -13,6 +13,10 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import AccountBoxIcon from "@mui/icons-material/AccountBox";
 import dayjs from "dayjs";
+import municipalIcon from "../../assets/WilayaIcon.png";
+import wilayaImg from "../../assets/StateIcon.png";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import Alert from "@mui/material/Alert";
 
 const today = dayjs();
 const NIN = /^\d{18}$/;
@@ -21,6 +25,19 @@ const passport = /^\d{9}$/;
 //const date = /^(?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const Number = /^(0)(5|6|7)([0-9]{8})$/;
 const Participation = () => {
+  //alert status
+  const [alertsuc, setAlertSuc] = useState(false);
+  const [alertErr, setAlertErr] = useState(false);
+  const [alertInfo, setAlertInfo] = useState(false);
+  const [err, setErr] = useState("");
+
+  const hideAlert = () => {
+    setTimeout(() => {
+      setAlertSuc(false);
+      setAlertErr(false);
+      setAlertInfo(false);
+    }, 3000);
+  };
   const { setAuth } = useContext(AuthContext);
   const gender = localStorage.getItem("gender");
 
@@ -177,7 +194,6 @@ const Participation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(selectedImage);
 
     if (
       validBirthday &&
@@ -192,42 +208,84 @@ const Participation = () => {
       selectedImage
     ) {
       const access = localStorage.getItem("accessToken");
-
+      const modify = localStorage.getItem("modify");
       try {
-        const response = await axios.post(
-          "/profile/",
-          {
-            nin: nin,
-            phone_number: phoneNumber,
-            birth_date: userBirthDate,
-            municipal: parseInt(municipal),
-            wilaya: parseInt(state),
-            passport_number: passportNumber,
-            passport_expiration_date: passportExp,
-            birth_certificate_number: birthCertificateNumber,
-            files: selectedFile,
-            address: adress,
-            picture: selectedImage,
-          },
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${access}`,
-            },
-          }
-        );
+        const response = modify
+          ? await axios.put(
+              "/profile/",
+              {
+                nin: nin,
+                phone_number: phoneNumber,
+                birth_date: userBirthDate,
+                municipal: parseInt(municipal),
+                wilaya: parseInt(state),
+                passport_number: passportNumber,
+                passport_expiration_date: passportExp,
+                birth_certificate_number: birthCertificateNumber,
+                files: selectedFile,
+                address: adress,
+                picture: selectedImage,
+              },
+              {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                  Authorization: `Bearer ${access}`,
+                },
+              }
+            )
+          : await axios.post(
+              "/profile/",
+              {
+                nin: nin,
+                phone_number: phoneNumber,
+                birth_date: userBirthDate,
+                municipal: parseInt(municipal),
+                wilaya: parseInt(state),
+                passport_number: passportNumber,
+                passport_expiration_date: passportExp,
+                birth_certificate_number: birthCertificateNumber,
+                files: selectedFile,
+                address: adress,
+                picture: selectedImage,
+              },
+              {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                  Authorization: `Bearer ${access}`,
+                },
+              }
+            );
+
         console.log(response.data);
 
-        if (response.status === 201) {
+        if (response.status === 201 || response.status === 200) {
           localStorage.setItem("Status", "P");
-
+          setAlertSuc(true);
+          setErr("Your request has been sent successfully");
+          hideAlert();
           navigate("/home/message");
         }
       } catch (error) {
+        const errorData = error.response.data;
+        let errorMessage = "";
+
+        Object.keys(errorData).some((key) => {
+          if (Object.prototype.hasOwnProperty.call(errorData, key)) {
+            errorMessage = errorData[key][0];
+            return true;
+          }
+          return false;
+        });
+
+        setAlertErr(true);
+        setErr("An error occurred, " + errorMessage);
+        hideAlert();
         console.error("Error:", error);
       }
     } else {
-      alert("Please fill all the fields with valid entry");
+      setAlertInfo(true);
+      setErr("Please fill all the fields with valid entry");
+      hideAlert();
     }
   };
 
@@ -253,6 +311,58 @@ const Participation = () => {
 
   return (
     <div className="auth-body">
+      {alertErr && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="error"
+        >
+          {err}
+        </Alert>
+      )}
+      {alertsuc && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="success"
+        >
+          {err}
+        </Alert>
+      )}
+
+      {alertInfo && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          severity="info"
+        >
+          {err}
+        </Alert>
+      )}
       <Link to="/">
         <ArrowBackIcon fontSize="large" sx={{ mt: 4, ml: 4 }} />
       </Link>
@@ -503,10 +613,12 @@ const Participation = () => {
                 style={{ position: "relative", width: "350px" }}
                 className={!validState && state ? "invalid-input" : "input"}
               >
+                <img src={wilayaImg} fontSize="medium" className="icon" />
                 <select
                   required
                   className="custom-select"
                   onChange={handleWilaya}
+                  style={{ width: "85%" }}
                 >
                   <option value="">Select Wilaya</option>
                   {stateOptions.map((option) => (
@@ -524,10 +636,12 @@ const Participation = () => {
                   !validMunicipal && municipal ? "invalid-input" : "input"
                 }
               >
+                <img src={municipalIcon} fontSize="medium" className="icon" />
                 <select
                   required
                   className="custom-select"
                   onChange={handleMunicipal}
+                  style={{ width: "85%" }}
                 >
                   <option value="">Select Municipal</option>
                   {municipalOptions.map((option) => (
@@ -548,8 +662,21 @@ const Participation = () => {
                   id="uploadButton"
                 />
                 <label htmlFor="uploadButton">
-                  <AccountBoxIcon sx={{ mr: 2, color: "rgb(0, 0, 0, 0.7)" }} />
-                  User image
+                  {selectedImage ? (
+                    <>
+                      <CheckCircleOutlinedIcon
+                        sx={{ mr: 2, color: "#4bb543" }}
+                      />
+                      User image uploaded
+                    </>
+                  ) : (
+                    <>
+                      <AccountBoxIcon
+                        sx={{ mr: 2, color: "rgb(0, 0, 0, 0.7)" }}
+                      />
+                      User image
+                    </>
+                  )}
                 </label>
               </div>
 
@@ -563,8 +690,13 @@ const Participation = () => {
                   id="PDFbutton"
                 />
                 <label htmlFor="PDFbutton">
-                  <UploadFileIcon sx={{ mr: 2, color: "rgb(0, 0, 0, 0.7)" }} />
-                  Upload PDF Proof images
+                  <UploadFileIcon
+                    sx={{
+                      mr: 2,
+                      color: selectedFile ? "#4bb543" : "rgb(0, 0, 0, 0.7)",
+                    }}
+                  />
+                  {selectedFile ? "PDF proof uploaded" : "PDF proof images "}
                 </label>
               </div>
             </Stack>

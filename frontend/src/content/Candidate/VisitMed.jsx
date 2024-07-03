@@ -5,39 +5,6 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../../Api/base";
 
-const data = [
-  {
-    hospital_name: "Hospital A",
-    municipal: "Municipal 1",
-    days_off: "Friday -Saturday",
-  },
-  {
-    hospital_name: "Hospital B",
-    municipal: "Municipal 1",
-    days_off: "Friday -Saturday",
-  },
-  {
-    hospital_name: "Hospital C",
-    municipal: "Municipal 1",
-    days_off: "Friday -Saturday",
-  },
-  {
-    hospital_name: "Hospital D",
-    municipal: "Municipal 1",
-    days_off: "Friday -Saturday",
-  },
-  {
-    hospital_name: "Hospital E",
-    municipal: "Municipal 1",
-    days_off: "Friday -Saturday",
-  },
-  {
-    hospital_name: "Hospital F",
-    municipal: "Municipal 1",
-    days_off: "Friday -Saturday",
-  },
-];
-
 const VisitMed = () => {
   const navigate = useNavigate();
   const handleLogOut = () => {
@@ -46,24 +13,23 @@ const VisitMed = () => {
   };
   const [hospitals, setaHospitals] = useState([]);
   const [selectedHospital, setSelectedHospital] = useState(null);
+  const [price, setPrice] = useState(0);
 
-  /*useEffect(() => {
+  useEffect(() => {
     const fetchInfo = async () => {
-      const accessToken = localStorage.getItem("accessToken");
       try {
-        const response = await axios.get("/pilgrimage/all", {
-          headers: {
-            Authorization: `Bearer ${accessToken}`, // Set the access token in the Authorization header
-          },
-        });
+        const response = await axios.get("/pilgrimage/current");
         console.log(response);
+        if (response.status === 200) {
+          setPrice(response.data.price);
+        }
       } catch (error) {
         console.error("Error:", error);
       }
     };
     fetchInfo();
   }, []);
-*/
+
   useEffect(() => {
     const accessToken = localStorage.getItem("accessToken");
 
@@ -78,11 +44,32 @@ const VisitMed = () => {
           }
         );
         console.log(response);
-        const formattedData = response.data.map((admin, index) => ({
-          id: index,
-          availableTime: admin.work_schedule[0].times,
-          name: admin.hospital_name,
-        }));
+        const formattedData = response.data.map((hospital, index) => {
+          const schedule = hospital.work_schedule.reduce(
+            (acc, curr) => {
+              acc[curr.day.toLowerCase()] =
+                curr.times.length > 0 ? curr.times.join(", ") : "/";
+              return acc;
+            },
+            {
+              saturday: "/",
+              sunday: "/",
+              monday: "/",
+              tuesday: "/",
+              wednesday: "/",
+              thursday: "/",
+              friday: "/",
+            }
+          );
+
+          return {
+            id: index,
+            hospital_name: hospital.hospital_name,
+            ...schedule,
+          };
+        });
+
+        console.log("the formatttttted", formattedData);
         setaHospitals(formattedData);
       } catch (error) {
         // Handle network errors or Axios request errors
@@ -97,7 +84,7 @@ const VisitMed = () => {
     // Retrieve the selected user object from the users array
     const selectedHospital =
       newSelection.length > 0
-        ? data?.find((hosp) => hosp.hospital_name === newSelection[0])
+        ? hospitals?.find((hosp) => hosp.hospital_name === newSelection[0])
         : null;
     setSelectedHospital(selectedHospital);
     console.log(selectedHospital);
@@ -109,9 +96,39 @@ const VisitMed = () => {
     () => [
       { field: "hospital_name", headerName: "Hospital", width: 200 },
       {
-        field: "days_off",
-        headerName: "Schedule",
-        width: 150,
+        field: "saturday",
+        headerName: "Saturday",
+        width: 100,
+        sortable: false,
+      },
+      {
+        field: "sunday",
+        headerName: "Sunday",
+        width: 100,
+        sortable: false,
+      },
+      {
+        field: "monday",
+        headerName: "Monday",
+        width: 100,
+        sortable: false,
+      },
+      {
+        field: "tuesday",
+        headerName: "Tuesday",
+        width: 100,
+        sortable: false,
+      },
+      {
+        field: "wednesday",
+        headerName: "Wednesday",
+        width: 100,
+        sortable: false,
+      },
+      {
+        field: "thursday",
+        headerName: "Thursday",
+        width: 100,
         sortable: false,
       },
     ],
@@ -170,18 +187,18 @@ const VisitMed = () => {
           display: "flex",
           flexDirection: {
             xs: "column",
-            md: "row",
+            xl: "row",
           },
           justifyContent: "flect-start",
           alignItems: "center",
           margin: "auto",
           px: 4,
-          gap: { xs: "20px", md: "80px" },
+          gap: { xs: "20px", md: "20px" },
         }}
       >
         <Box
           sx={{
-            width: { xs: "90%", md: "40%" },
+            width: { xs: "90%", md: "68%" },
             height: "100%",
           }}
         >
@@ -189,8 +206,8 @@ const VisitMed = () => {
             <DataGrid
               columns={columns}
               onRowSelectionModelChange={handleSelectionChange}
-              rows={data}
-              getRowId={(row) => row.hospital_name}
+              rows={hospitals}
+              getRowId={(row) => row.id}
               hideFooterSelectedRowCount
               getRowSpacing={(params) => ({
                 top: params.isFirstVisible ? 0 : 2,
@@ -244,9 +261,8 @@ const VisitMed = () => {
         </Box>
         <Box
           sx={{
-            width: { xs: "90%", md: "42%" },
+            width: { xs: "90%", xl: "32%" },
             height: "90%",
-
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
@@ -261,14 +277,13 @@ const VisitMed = () => {
               width: "100%",
               height: "170px",
               justifyContent: "space-between",
-              //border: "1px solid black",
             }}
           >
             <Box
               sx={{
                 p: 4,
                 height: "100%",
-                width: "40%",
+                width: "45%",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -281,16 +296,16 @@ const VisitMed = () => {
                 Hajj fees
               </span>
               <span
-                style={{ fontSize: "24px", fontWeight: 600, color: "#AB7595" }}
+                style={{ fontSize: "20px", fontWeight: 600, color: "#AB7595" }}
               >
-                750000 DA
+                {price} DA
               </span>
             </Box>
             <Box
               sx={{
                 p: 4,
                 height: "100%",
-                width: "40%",
+                width: "45%",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -311,7 +326,8 @@ const VisitMed = () => {
           </Stack>
           <Box
             sx={{
-              p: 4,
+              py: 3,
+              px: 0,
               height: "280px",
               width: "100%",
               display: "flex",
@@ -348,12 +364,12 @@ const VisitMed = () => {
             >
               <ul
                 style={{
-                  fontSize: "18px",
+                  fontSize: "16px",
                   fontWeight: 600,
                   display: "inline-block",
                 }}
               >
-                <li style={{ marginBottom: "40px" }}>medical record </li>
+                <li style={{ marginBottom: "10px" }}>medical record </li>
                 <li>List of medications </li>
               </ul>
               <Box

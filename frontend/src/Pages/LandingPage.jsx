@@ -7,11 +7,25 @@ import Content2 from "../content/LandingPage/Content2";
 import Content3 from "../content/LandingPage/Content3";
 import Content4 from "../content/LandingPage/Content4";
 import Content5 from "../content/LandingPage/Content5";
+import Content6 from "../content/LandingPage/Content6";
 import Footer from "../content/LandingPage/Footer";
 import Logo from "../assets/Logo.png";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const LandingPage = () => {
+  const content1Ref = useRef(null);
+  const contentFotterRef = useRef(null);
+  const content6Ref = useRef(null);
+  const handleScrollToContent1 = () => {
+    content1Ref.current.scrollIntoView({ behavior: "smooth" });
+  };
+  const handleScrollToContentFotter = () => {
+    contentFotterRef.current.scrollIntoView({ behavior: "smooth" });
+  };
+  const handleScrollToContent6 = () => {
+    content6Ref.current.scrollIntoView({ behavior: "smooth" });
+  };
+
   const navigate = useNavigate();
   //if access exits and status is defined and =! null
   const [clicked, setClicked] = useState(false);
@@ -56,18 +70,74 @@ const LandingPage = () => {
             px: { xs: 0, md: 6 },
           }}
         >
-          <img src={Logo} />
-          <Typography
+          <Box
             sx={{
-              fontWeight: "400",
-              fontSize: { xs: "20px", md: "24px" },
-              color: "white",
-              position: "relative",
-              left: "-20%",
+              width: { xs: "100px", md: "250px" },
             }}
           >
-            Home
-          </Typography>
+            <img style={{ width: "100%" }} src={Logo} />
+          </Box>
+          <Stack
+            direction={"row"}
+            sx={{
+              gap: { xs: "15px", sm: "25px", md: "50px" },
+            }}
+          >
+            <Typography
+              sx={{
+                fontWeight: "500",
+                fontSize: { xs: "18px", sm: "22px" },
+                color: "white",
+                cursor: "pointer",
+              }}
+            >
+              Home
+            </Typography>
+            <Typography
+              onClick={handleScrollToContent1}
+              sx={{
+                fontWeight: "500",
+                fontSize: { xs: "18px", sm: "22px" },
+                color: "rgba(255, 255, 255, 0.6)",
+                cursor: "pointer",
+              }}
+            >
+              Features
+            </Typography>
+            <Typography
+              onClick={() => navigate("/AboutUs")}
+              sx={{
+                fontWeight: "500",
+                fontSize: { xs: "18px", sm: "22px" },
+                color: "rgba(255, 255, 255, 0.6)",
+                cursor: "pointer",
+              }}
+            >
+              About us
+            </Typography>
+            <Typography
+              onClick={handleScrollToContent6}
+              sx={{
+                fontWeight: "500",
+                fontSize: { xs: "18px", sm: "22px" },
+                color: "rgba(255, 255, 255, 0.6)",
+                cursor: "pointer",
+              }}
+            >
+              FQs
+            </Typography>
+            <Typography
+              onClick={handleScrollToContentFotter}
+              sx={{
+                fontWeight: "500",
+                fontSize: { xs: "18px", sm: "22px" },
+                color: "rgba(255, 255, 255, 0.6)",
+                cursor: "pointer",
+              }}
+            >
+              Contact
+            </Typography>
+          </Stack>
           {!access && (
             <button
               className="button"
@@ -296,12 +366,19 @@ const LandingPage = () => {
           </Box>
         )}
       </div>
-      <Content1 />
+      <div ref={content1Ref}>
+        <Content1 />
+      </div>
       <Content2 />
       <Content3 />
       <Content4 />
       <Content5 />
-      <Footer />
+      <div ref={content6Ref}>
+        <Content6 />
+      </div>
+      <div ref={contentFotterRef}>
+        <Footer />
+      </div>
     </>
   );
 };

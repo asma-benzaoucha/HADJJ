@@ -30,6 +30,7 @@ const Sidebar = [
 ];
 
 const DoctorInterface = () => {
+  const profile_pic = localStorage.getItem("profile_pic");
   const [selectedItem, setSelectedItem] = useState("Dashboard");
   const name = localStorage.getItem("name");
 
@@ -91,7 +92,7 @@ const DoctorInterface = () => {
           }}
         >
           <Avatar
-            src={Photo}
+            src={`data:image/png;base64,${profile_pic}`}
             alt={name}
             sx={{
               width: { xs: "70px", sm: "90px", md: "110px" },

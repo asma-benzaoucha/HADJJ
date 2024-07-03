@@ -14,6 +14,7 @@ from roles.roles import IsAdminUser, IsGeneralAdminOrAdminUser, IsMedicalAdminUs
 from django.db.models import Q
 from users.models import User, UserInscriptionHistory, UserStatus
 from personal_profile.models import PersonalProfile
+from personal_profile.serializers import CompanionSerializer
 
 from .serializers import MedicalAdminProfileSerializer, CandidateSerializer, AdminProfileSerializer ,HospitalsAdminSerializer,HospitalScheduleSerializer
 
@@ -27,6 +28,7 @@ from .serializers import (
 )
 from users.serializers import UserSerializer
 from municipal_wilaya.models import Wilaya, Hospital
+from personal_profile.models import PersonalProfile, Companion
 
 
 
@@ -115,7 +117,7 @@ def get_user_data(users_data):
     for i in range(len(users_data)):
         email = users_data[i]["email"]
         personal_profile = PersonalProfile.objects.get(user__email=email)
-
+        gender = users_data[i]["gender"]
         users_data[i]["gender"] = gender_dictionary[users_data[i]["gender"]]
 
         users_data[i]["nin"] = personal_profile.nin
@@ -141,11 +143,26 @@ def get_user_data(users_data):
             UserStatus.objects.get(user__email=email).status
         ]
         users_data[i]["contact"] = personal_profile.phone_number
+        print(gender)
+        if gender == "F":
+                print("here")
+                try:
+                    user = User.objects.get(email=email)
+                    comp = Companion.objects.get(user=user)
+                    print(comp)
+                    ser = CompanionSerializer(comp)
+                    
+                    users_data[i]["companion"] = ser.data
+                except User.DoesNotExist:
+                    pass
         try:
             x = UserInscriptionHistory.objects.get(user__email=email)
         except UserInscriptionHistory.DoesNotExist:
             pass
         users_data[i]["participation_number"] = x.inscription_count if x else -1
+
+        
+        
 
     return users_data
 
@@ -155,7 +172,7 @@ def get_user_data(users_data):
 def get_all_users(request):
     user = request.user
     wilaya = user.admin_profile.object_id
-    users = User.objects.filter(personal_profile__wilaya=wilaya)
+    users = User.objects.filter(personal_profile__wilaya=wilaya, role = User.IS_CANDIDATE)
     users_data = UserSerializer(users, many=True).data
     return Response(get_user_data(users_data), status=status.HTTP_200_OK)
 
@@ -247,9 +264,14 @@ def update_delete_admin(request, admin_id):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def add_medical_admin(request):
+    
     serializer = MedicalAdminProfileSerializer(data=request.data, context={'request': request})
+    print("here 2")
+    # print(request.data)
     if serializer.is_valid():
+        print("here 3")
         medical_admin = serializer.save()  # Save the instance once
+        
         # Send email to the newly added medical admin
         email_subject = 'Welcome to our platform'
         email_message = f'Hello {medical_admin.user.first_name},\n\nYou have been added as a medical admin on our platform. Your password is the concatenation of your last name and email. Thank you.'
@@ -267,19 +289,20 @@ def add_medical_admin(request):
 @api_view(['DELETE'])
 @permission_classes([IsAdminUser])
 def delete_medical_admin(request, pk):
-    try:
-        medical_admin = MedicalAdminProfile.objects.get(pk=pk)
-    except MedicalAdminProfile.DoesNotExist:
-        return Response({'error': 'Medical admin not found'}, status=status.HTTP_404_NOT_FOUND)
+    # try:
+    #     medical_admin = MedicalAdminProfile.objects.get(pk=pk)
+    # except MedicalAdminProfile.DoesNotExist:
+    #     return Response({'error': 'Medical admin not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    user_id = medical_admin.user.id  
-    medical_admin.delete()
+    # user_id = medical_admin.user.id  
+    # medical_admin.delete()
 
     try:
-        user = User.objects.get(id=user_id)
+        user = User.objects.get(id=pk)
         user.delete()
     except User.DoesNotExist:
-        pass  # User already deleted, do nothing
+        return Response({'error': 'Medical admin not found'}, status=status.HTTP_404_NOT_FOUND)
+        
 
     return Response({'success': True, 'message': 'Medical admin deleted successfully'}, status=status.HTTP_200_OK)
 

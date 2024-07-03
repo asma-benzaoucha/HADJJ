@@ -2,9 +2,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .models import Reservation, Flight, Hotel, Room
+from .models import Reservation, Flight, Hotel, Room, Airport
 from .serializers import ReservationSerializer, FlightSerializer, HotelSerializer, RoomSerializer
 from users.models import UserStatus
+from django.db.models import Q
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -19,8 +20,9 @@ def does_user_have_reservation(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_all_flights(request):
-    user_wilaya = request.user.personal_profile.wilaya  
-    flights = Flight.objects.filter(airport__wilaya=user_wilaya)
+    user_wilaya = request.user.personal_profile.wilaya 
+    print(user_wilaya)
+    flights = Flight.objects.filter(airport__associated_wilayas=user_wilaya.id)
     serializer = FlightSerializer(flights, many=True)
     print(serializer.data)
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -48,7 +50,7 @@ def get_all_flights(request):
 def get_all_hotels_and_rooms(request):
     user = request.user
     user_wilaya = user.personal_profile.wilaya
-    hotels = Hotel.objects.filter(flight__airport__wilaya=user_wilaya)
+    hotels = Hotel.objects.filter(flight__airport__associated_wilayas=user_wilaya.id)
     serializer = HotelSerializer(hotels, many=True)
     print(serializer.data)
     return Response(serializer.data, status=status.HTTP_200_OK)

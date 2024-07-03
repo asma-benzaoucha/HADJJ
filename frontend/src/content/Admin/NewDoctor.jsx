@@ -2,12 +2,9 @@ import { Box, Button, Typography } from "@mui/material";
 import { useState, useEffect } from "react";
 import PersonIcon from "@mui/icons-material/Person";
 import EmailIcon from "@mui/icons-material/Email";
-import LockIcon from "@mui/icons-material/Lock";
-import LocalPhoneIcon from "@mui/icons-material/LocalPhone";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
 import AccountBoxIcon from "@mui/icons-material/AccountBox";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import CircularProgress from "@mui/material/CircularProgress";
 import CheckIcon from "@mui/icons-material/Check";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -19,12 +16,25 @@ import Paper from "@mui/material/Paper";
 import CloseIcon from "@mui/icons-material/Close";
 import PropTypes from "prop-types";
 import axios from "../../Api/base";
+import Gendericon from "../../assets/GenderIcon.png";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import Alert from "@mui/material/Alert";
 
 function NewDoctor({ onClose }) {
   NewDoctor.propTypes = {
     onClose: PropTypes.func.isRequired,
   };
+  const [loading, setLoading] = useState(false);
+  const [alertsuc, setAlertSuc] = useState(false);
+  const [alertErr, setAlertErr] = useState(false);
+  const [err, setErr] = useState("");
 
+  const hideAlert = () => {
+    setTimeout(() => {
+      setAlertSuc(false);
+      setAlertErr(false);
+    }, 3000);
+  };
   const [selectedCells, setSelectedCells] = useState([]);
 
   const postData = {
@@ -116,31 +126,29 @@ function NewDoctor({ onClose }) {
     console.log("fetching hospitals");
     const access = localStorage.getItem("accessToken");
     const fetchHospitals = async () => {
-      if (doctors[0].state) {
-        try {
-          const response = await axios.get("/accounts/hospitals-in-wilaya/", {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${access}`,
-            },
-          });
-          console.log("Hospitals:", response.data);
+      try {
+        const response = await axios.get("/accounts/hospitals-in-wilaya/", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${access}`,
+          },
+        });
+        console.log("Hospitals:", response.data);
 
-          const fetchedOptions = response.data.map((item) => ({
-            value: item.name,
-            label: item.id,
-          }));
+        const fetchedOptions = response.data.map((item) => ({
+          value: item.name,
+          label: item.id,
+        }));
 
-          setHospitalOptions(fetchedOptions);
-          console.log("Hospital options:", hospitalOptions);
-        } catch (error) {
-          console.error("Error fetching hospitals:", error);
-        }
+        setHospitalOptions(fetchedOptions);
+        console.log("Hospital options:", hospitalOptions);
+      } catch (error) {
+        console.error("Error fetching hospitals:", error);
       }
     };
 
     fetchHospitals();
-  }, [doctors[0].state]);
+  }, []);
   console.log("Doctors:", doctors);
 
   const handleInputChange = (e, index) => {
@@ -171,6 +179,9 @@ function NewDoctor({ onClose }) {
     setDoctors(updatedDoctors);
   };
 
+  console.log("Doctors:", doctors);
+  console.log("the image ", doctors[0].image);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (doctors[0].gender === "male") {
@@ -180,6 +191,22 @@ function NewDoctor({ onClose }) {
     }
     doctors[0].state = parseInt(doctors[0].state);
     console.log("Doctors:", doctors[0]);
+    const ladata = [
+      {
+        user: {
+          first_name: doctors[0].firstName,
+          last_name: doctors[0].lastName,
+          email: doctors[0].email,
+          gender: doctors[0].gender,
+          role: "MedicalAdmin",
+        },
+        hospital_name: doctors[0].hospitalName,
+        work_schedule: postData.work_schedule,
+        profile_picture: null,
+      },
+    ];
+    setLoading(true);
+    console.log("ladata", ladata);
     try {
       const access = localStorage.getItem("accessToken");
       const response = await axios.post(
@@ -199,19 +226,76 @@ function NewDoctor({ onClose }) {
         {
           headers: {
             "Content-Type": "application/json",
+            // "Content-Type": "multipart/form-data",
             Authorization: `Bearer ${access}`,
           },
         }
       );
       console.log("Response:", response.data);
+      setAlertSuc(true);
+      setErr("Doctor added successfully");
+      hideAlert();
       onClose();
     } catch (error) {
+      setLoading(true);
       console.error("Error adding doctors:", error);
+      setAlertErr(true);
+      setErr("Problem in adding doctor");
+      hideAlert();
     }
   };
 
   return (
     <div className="auth-body">
+      {alertErr && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+            width: "300px",
+          }}
+          severity="error"
+        >
+          {err}
+        </Alert>
+      )}
+      {alertsuc && (
+        <Alert
+          sx={{
+            zIndex: 1000,
+            position: "absolute",
+            top: "10px",
+            left: "50%",
+            transform: "translate(-50%, 0)",
+            opacity: 1,
+            transition: "opacity 0.5s ease-in-out",
+            boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+            width: "300px",
+          }}
+          severity="success"
+        >
+          {err}
+        </Alert>
+      )}
+      {loading && (
+        <div
+          style={{
+            position: "fixed",
+            top: "10px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 1000,
+          }}
+        >
+          <CircularProgress />
+        </div>
+      )}
       {doctors.map((doctor, index) => (
         <Box
           key={index}
@@ -283,45 +367,7 @@ function NewDoctor({ onClose }) {
                   required
                 />
               </div>
-              <div className="input" style={{ marginRight: "10px" }}>
-                <EmailIcon fontSize="medium" className="icon" />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  name="email"
-                  value={doctor.email}
-                  onChange={(e) => handleInputChange(e, index)}
-                  required
-                />
-              </div>
-              <div className="input">
-                <LocationOnIcon fontSize="medium" className="icon" />
-                <select
-                  name="state"
-                  value={doctor.state}
-                  onChange={(e) => handleInputChange(e, index)}
-                  required
-                >
-                  <option value="">Select State</option>
-                  {stateOptions.map((state) => (
-                    <option key={state.label} value={state.label}>
-                      {state.value}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            {/* Additional inputs */}
-            <div
-              className="email-password"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: "-5px",
-                width: "100%",
-              }}
-            >
-              <div className="input" style={{ marginRight: "10px" }}>
+              <div className="input" style={{ marginRight: "0px" }}>
                 <PersonIcon fontSize="medium" className="icon" />
                 <input
                   type="text"
@@ -333,39 +379,29 @@ function NewDoctor({ onClose }) {
                 />
               </div>
               <div className="input" style={{ marginRight: "10px" }}>
-                <LockIcon fontSize="medium" className="icon" />
+                <EmailIcon fontSize="medium" className="icon" />
                 <input
-                  type="password"
-                  placeholder="Password"
-                  name="password"
-                  value={doctor.password}
-                  onChange={(e) => handleInputChange(e, index)}
-                  required
-                />
-              </div>
-              <div className="input">
-                <LocalPhoneIcon fontSize="medium" className="icon" />
-                <input
-                  type="text"
-                  placeholder="Phone Number"
-                  name="phoneNumber"
-                  value={doctor.phoneNumber}
+                  type="email"
+                  placeholder="Email"
+                  name="email"
+                  value={doctor.email}
                   onChange={(e) => handleInputChange(e, index)}
                   required
                 />
               </div>
             </div>
+            {/* Additional inputs */}
             <div
-              className="gender"
+              className="email-password"
               style={{
                 display: "flex",
-                justifyContent: "space-between",
+                justifyContent: "space-evenly",
                 marginBottom: "-5px",
                 width: "100%",
               }}
             >
-              <div className="input" style={{ marginRight: "10px" }}>
-                <PersonIcon fontSize="medium" className="icon" />
+              <div className="input" style={{ marginRight: "0px" }}>
+                <img src={Gendericon} fontSize="medium" className="icon" />
                 <select
                   name="gender"
                   value={doctor.gender}
@@ -376,17 +412,6 @@ function NewDoctor({ onClose }) {
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                 </select>
-              </div>
-              <div className="input" style={{ marginRight: "10px" }}>
-                <VisibilityOffIcon fontSize="medium" className="icon" />
-                <input
-                  type="password"
-                  placeholder="Confirm Password"
-                  name="confirmPassword"
-                  value={doctor.confirmPassword}
-                  onChange={(e) => handleInputChange(e, index)}
-                  required
-                />
               </div>
               <div className="input">
                 <LocalHospitalIcon fontSize="medium" className="icon" />
@@ -404,29 +429,62 @@ function NewDoctor({ onClose }) {
                   ))}
                 </select>
               </div>
-            </div>
-            <div
-              className="input"
-              style={{
-                color: "rgba(0, 0, 0, 0.5)",
-                width: "32%",
-                marginBottom: "15px",
-              }}
-            >
-              <div>
-                <input
-                  style={{ display: "none" }}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileChange(e.target.files[0], index)}
-                  id={`uploadButton${index}`}
-                />
-                <label htmlFor={`uploadButton${index}`}>
-                  <AccountBoxIcon fontSize="medium" className="icon" />
-                  image
-                </label>
+              {/*<div
+                className="input"
+                style={{
+                  color: "rgba(0, 0, 0, 0.5)",
+                  width: "32%",
+                  marginBottom: "15px",
+                  cursor: "pointer",
+                }}
+              >
+                <div>
+                  <input
+                    style={{
+                      display: "none",
+                      cursor: "pointer",
+                    }}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e.target.files[0], index)}
+                    id={`uploadButton${index}`}
+                  />
+                  <label htmlFor={`uploadButton${index}`}>
+                    {doctors[0]?.image != null ? (
+                      <>
+                        <CheckCircleOutlinedIcon
+                          fontSize="medium"
+                          className="icon"
+                          sx={{
+                            mr: 2,
+                            color: "#4bb543",
+                            position: "relative",
+                            top: "3px",
+                          }}
+                        />
+                        image uploaded
+                      </>
+                    ) : (
+                      <>
+                        <AccountBoxIcon
+                          fontSize="medium"
+                          className="icon"
+                          sx={{
+                            mr: 2,
+                            color: "rgb(0, 0, 0, 0.7)",
+                            position: "relative",
+                            top: "3px",
+                          }}
+                        />
+                        Upload image
+                      </>
+                    )}
+                  </label>
+                </div>
               </div>
+              */}
             </div>
+
             <Typography
               variant="h6"
               sx={{
@@ -523,6 +581,10 @@ function NewDoctor({ onClose }) {
                   height: "50px",
                   marginTop: "20px",
                   marginBottom: "150px",
+                  "&:hover": {
+                    backgroundColor: "#923f70",
+                    color: "#FFF0F5",
+                  },
                 }}
               >
                 Confirm

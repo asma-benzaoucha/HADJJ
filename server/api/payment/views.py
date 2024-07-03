@@ -66,7 +66,7 @@ def validate_transaction(request):
     response = requests.post(url, json=payment_details)
     
     if response.status_code == 200:
-        Payment.objects.create(user=user, payment_code=payment_details["payment_code"], file=file)
+        Payment.objects.create(user=user, payment_code=payment_details["payment_code"], file=file, is_paid=True)
         UserStatus.objects.filter(user=user).update(process= UserStatus.Process.RESERVATION)
         return Response({"success": True}, status=status.HTTP_200_OK)
     else:

@@ -5,26 +5,32 @@ from promote_backup.promote_backup import promote_backup
 
 
 class PatientHealthReviewSerializer(serializers.ModelSerializer):
-    treatments = serializers.ListField(child=serializers.CharField(max_length=255), allow_empty=True)
-    diseases = serializers.ListField(child=serializers.CharField(max_length=255), allow_empty=True)
+    treatments = serializers.ListField(child=serializers.CharField(max_length=255), allow_empty=True, required=False)
+    diseases = serializers.ListField(child=serializers.CharField(max_length=255), allow_empty=True, required=False)
 
     class Meta:
         model = PatientHealthReview
         fields = '__all__'
+        # extra_kwargs = {
+        #     'diseases': {'required': False},
+        #     'treatments': {'required': False},
+        # }
 
     def validate(self, data):
         is_sick = data.get('is_sick')
         is_healthy = data.get('is_healthy')
-        if is_sick and not is_healthy and not data.get('diseases'):
-            raise serializers.ValidationError({'diseases': 'Diseases are required for a sick patient.'})
-        if not is_sick and is_healthy and   data.get('diseases'):
-            raise serializers.ValidationError({'diseases': 'Diseases are not available for a healthy patient.'})
-        if (is_sick and is_healthy ) or   (not is_sick and  not is_healthy ):
-            raise serializers.ValidationError({ 'patient can"t be sick and healthy in the same time.'})
+        is_accepted = data.get('is_accepted')
+        if is_healthy and is_sick:
+            raise serializers.ValidationError({"detail": "Patient cannot be both healthy and sick"})
+        if not is_healthy and not is_sick:
+            raise serializers.ValidationError({"detail": "Patient must be either healthy or sick"})
+        if is_healthy and not is_accepted:
+            raise serializers.ValidationError({"detail": "Patient must be accepted if healthy"})
         return data
+        
 
     def create(self, validated_data):
-        is_accepted = validated_data.pop('is_accepted', None)
+        is_accepted = validated_data.get('is_accepted', None)
         instance = PatientHealthReview.objects.create(**validated_data)
         if is_accepted is not None:
             user_status = instance.user.status

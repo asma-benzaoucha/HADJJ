@@ -24,8 +24,10 @@ class PersonalProfileSerializer(serializers.ModelSerializer):
     companion = CompanionSerializer(required=False)
     
     def create(self, validated_data):
+        print(validated_data)
         
         companion_data = validated_data.pop('companion', None)
+        print(companion_data)
         personal_profile = PersonalProfile.objects.create(**validated_data)
         UserStatus.objects.create(
             user = validated_data["user"],
@@ -46,6 +48,8 @@ class PersonalProfileSerializer(serializers.ModelSerializer):
         companion_data = validated_data.pop('companion', None)
         
         instance = super().update(instance, validated_data)
+        print(validated_data)
+        print(instance.user)
         
         if companion_data is not None:
             companion = instance.user.companion
@@ -54,7 +58,14 @@ class PersonalProfileSerializer(serializers.ModelSerializer):
             companion_serializer = CompanionSerializer(companion, data=companion_data, partial=True)
             if companion_serializer.is_valid(raise_exception=True):
                 companion_serializer.save()
-        UserStatus.objects.update(user=instance.user, status='P', process='I')
+        try:
+            user_status = UserStatus.objects.get(user=instance.user)
+            user_status.status = UserStatus.Status.PENDING
+            user_status.process = UserStatus.Process.INSCRIPTION
+            user_status.save()
+        
+        except UserStatus.DoesNotExist:
+            pass
         
         return instance
         

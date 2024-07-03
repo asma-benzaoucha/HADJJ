@@ -60,6 +60,7 @@ const SidebarDataAdmin = [
 const AdminInterface = () => {
   const [isDone, setIsDone] = useState(false);
   const [isAll, setIsAll] = useState(false);
+  const [clicked, setClicked] = useState(false);
 
   useEffect(() => {
     const check = async () => {
@@ -79,7 +80,9 @@ const AdminInterface = () => {
       }
     };
     check();
-  }, []);
+  }, [clicked]);
+  console.log("isDone is ", isDone);
+  console.log("isAll is ", isAll);
   const [selectedItem, setSelectedItem] = useState("Dashboard");
   const name = localStorage.getItem("name");
   const role = localStorage.getItem("role");
@@ -100,7 +103,9 @@ const AdminInterface = () => {
       lastPathSegment === "drawtype" ||
       lastPathSegment === "grouping" ||
       lastPathSegment === "DrawType" ||
-      lastPathSegment === "Grouping"
+      lastPathSegment === "Grouping" ||
+      lastPathSegment === "Winners" ||
+      lastPathSegment === "winners"
     ) {
       setSelectedItem("Lottery");
     } else {
@@ -109,6 +114,8 @@ const AdminInterface = () => {
   }, [location.pathname]);
 
   const handleItemClick = (item) => {
+    setClicked(!clicked);
+
     setSelectedItem(item.title);
     console.log("item tile is ", item.title);
     if (item.title === "Lottery" && role === "Admin") {
@@ -117,7 +124,7 @@ const AdminInterface = () => {
       } else if (isDone === true && isAll === false) {
         navigate("/Admin/Grouping");
       } else if (isDone === true && isAll === true) {
-        navigate("/Admin/Lottery");
+        navigate("/Admin/Winners");
       }
     } else {
       navigate(item.path);

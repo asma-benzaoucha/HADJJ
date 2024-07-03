@@ -4,6 +4,7 @@ import { Box, Stack, Alert } from "@mui/material";
 import { useEffect, useState } from "react";
 
 const Method = () => {
+  const [refresh, setRefresh] = useState(false);
   const [algoExists, setAlgoExists] = useState(null);
   const [statsParticipation, setStatsParticipation] = useState([]);
   const [statsAge, setStatsAge] = useState([]);
@@ -182,6 +183,7 @@ const Method = () => {
         setErr("Algorithme is now registred");
         hideAlert();
         setSelectedMethod(null);
+        setRefresh(!refresh);
       } else {
         setAlertErr(true);
         setErr("There is no active season at the moment");
@@ -221,7 +223,7 @@ const Method = () => {
     };
 
     fetchAlgo(); // Call the async function to execute it
-  }, []);
+  }, [refresh]);
   return (
     <Box
       sx={{

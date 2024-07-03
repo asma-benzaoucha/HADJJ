@@ -6,7 +6,6 @@ import { useMemo, useState, useEffect } from "react";
 import AvatarGroup from "@mui/material/AvatarGroup";
 import MailIcon from "@mui/icons-material/Mail";
 import PhoneIcon from "@mui/icons-material/Phone";
-import { useNavigate } from "react-router-dom";
 import axios from "../../Api/base";
 import PatientHealthReview from "./PatientHealthReview";
 import CloseIcon from "@mui/icons-material/Close";
@@ -17,6 +16,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 
 const Patients = () => {
   const [data, setData] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const accessToken = localStorage.getItem("accessToken");
@@ -38,7 +38,7 @@ const Patients = () => {
     };
 
     fetchData();
-  }, []);
+  }, [isModalOpen]);
 
   function calculateAge(birthDateString) {
     const birthDate = new Date(birthDateString);
@@ -233,14 +233,6 @@ const Patients = () => {
     []
   );
 
-  const navigate = useNavigate();
-  const handleLogOut = () => {
-    localStorage.clear();
-    navigate("/");
-  };
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
   const handleCloseModal = () => {
     //setSelectedUser(null);
     setIsModalOpen(false);
@@ -289,7 +281,7 @@ const Patients = () => {
               fontSize: { xs: "14px", sm: "22px" },
             }}
           >
-            Wilaya of {localStorage.getItem("wilaya")}
+            {localStorage.getItem("wilaya")}
           </Typography>
           <div style={{ flex: 1 }} />
           {selectedUser?.phase === "Med visit" &&

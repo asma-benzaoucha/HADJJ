@@ -58,7 +58,7 @@ def _registration_priority(municipals, wilaya, _, used_seats):
     
     seats+=used_seats
 
-    select_winners(
+    y,i=select_winners(
         non_duplicate_list=participants_ids,
         participants_ids=participants_weighted_ids,
         seats=seats,
@@ -66,11 +66,17 @@ def _registration_priority(municipals, wilaya, _, used_seats):
         status=UserStatus.Status.PENDING.value,
         result_list=winners,
     )
+    print("y",y)
+    print("i",i)
+    participants_ids.append(y)
+    for _ in range(i):
+        participants_weighted_ids.append(y)
+
 
     # # get the backup
     backup_seats = round(seats * 0.5)
     print(backup_seats)
-    select_winners(
+    y,i=select_winners(
         non_duplicate_list=participants_ids,
         participants_ids=participants_weighted_ids,
         seats=backup_seats,
@@ -78,8 +84,13 @@ def _registration_priority(municipals, wilaya, _, used_seats):
         status=UserStatus.Status.IN_RESERVE.value,
         result_list=backup,
     )
+    participants_ids.append(y)
+    for _ in range(i):
+        participants_weighted_ids.append(y)
     try:
+        print(participants_ids)
         UserStatus.objects.filter(user__in = participants_ids).update(status = UserStatus.Status.REJECTED.value)
+        print("rejected", UserStatus.Status.REJECTED.value)
     except Exception as e:
         print(f"error {e}")
 
@@ -98,7 +109,9 @@ def select_winners(
     while participants_ids and seats > 0:
         winner = random.choice(participants_ids)
         non_duplicate_list.remove(winner)
+        i=0
         while winner in participants_ids:
+            i+=1
             participants_ids.remove(winner)
         participant_status = UserStatus.objects.get(user=winner)
 
@@ -106,10 +119,15 @@ def select_winners(
         if participant_status.process != UserStatus.Process.VISIT.value:
             participant = User.objects.get(id=winner)
             if participant.gender == "M" or (seats > 1):
+                print("winner", winner)
                 seats -= 1 if participant.gender == "M" else 2
                 participant_status.process = process
                 participant_status.status = status
                 result_list.append(winner_data(participant))
                 participant_status.save()
-
-    return result_list
+            # else:
+            #     print("added code", winner)
+            #     non_duplicate_list.append(winner)
+            #     for _ in range(i):
+            #         participants_ids.append(winner)
+    return (winner, i)

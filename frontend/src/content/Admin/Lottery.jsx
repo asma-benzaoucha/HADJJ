@@ -7,39 +7,115 @@ import axios from "../../Api/base";
 import { FaArrowCircleRight } from "react-icons/fa";
 import { Navigate, useNavigate } from "react-router-dom";
 import LocalActivityOutlinedIcon from "@mui/icons-material/LocalActivityOutlined";
+import WinnersTable from "../../Components/WinnersTable";
 
 const screenHeight = window.innerHeight;
 
 const Lottery = () => {
+  const [participants, setParticipants] = useState([]);
+  const [municipals, setMunicipals] = useState([]);
+  const [numberOfWinners, setNumberOfWinners] = useState(0);
+  const [currentWinner, setCurrentWinner] = useState("");
+  const [winners, setWinners] = useState([]);
+  const [totalWinners, setTotalWinners] = useState(0);
+  const [finished, setFinished] = useState(false);
+  useEffect(() => {
+    if (numberOfWinners === totalWinners && initialWinners?.length > 0) {
+      console.log("All winners are selected");
+      setFinished(true);
+    }
+  }, [numberOfWinners]);
   const navigate = useNavigate();
   const [initialWinners, setInitialWinners] = useState([]);
+  const accessToken = localStorage.getItem("accessToken");
   let newSeats = 0;
   if (localStorage.getItem("seats")) {
     newSeats = parseInt(localStorage.getItem("seats"));
     console.log("new seats", newSeats);
   }
 
+  const [isDone, setIsDone] = useState(false);
+  const [isAll, setIsAll] = useState(false);
+  const [final, setFinal] = useState(false);
   useEffect(() => {
-    const accessToken = localStorage.getItem("accessToken");
-    const municipal_ids = JSON.parse(localStorage.getItem("municipals_ids"));
-    console.log("municipal_ids", municipal_ids);
-
     const check = async () => {
       try {
-        const response = await axios.post(
-          "/lottery/participants",
-          municipal_ids,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
-        );
-        console.log("Response:", response.data);
-        setParticipants(response.data.participants);
+        const response = await axios.get("/lottery/", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        const done = response.data.done;
+        const all = response.data.all;
+        setIsAll(all);
+        setIsDone(done);
       } catch (error) {
         // Handle network errors or Axios request errors
         console.error("Error:", error);
+      }
+    };
+    check();
+  }, [finished]);
+  console.log("isDone", isDone);
+  console.log("isAll", isAll);
+
+  useEffect(() => {
+    if (isDone && isAll) {
+      setFinal(true);
+    }
+  }, [isAll, isDone]);
+
+  console.log("final", final);
+
+  useEffect(() => {
+    const accessToken = localStorage.getItem("accessToken");
+    const storedMunicipalIds = localStorage.getItem("municipals_ids");
+    const municipal_ids = storedMunicipalIds
+      ? JSON.parse(storedMunicipalIds)
+      : [];
+    console.log("municipal_ids", municipal_ids);
+
+    const check = async () => {
+      if (Array.isArray(municipal_ids)) {
+        const ids = municipal_ids.map((item) => item.id);
+
+        console.log("tranformed data", ids);
+        console.log("hereeeeeeeee");
+        try {
+          console.log("rani meme hna");
+          const response = await axios.post(
+            "/lottery/participants",
+            { municipals: ids },
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          console.log("Response:", response.data);
+          setParticipants(response.data.participants);
+        } catch (error) {
+          // Handle network errors or Axios request errors
+          console.error("Error:", error);
+        }
+      } else {
+        try {
+          console.log("rani hna");
+          const response = await axios.post(
+            "/lottery/participants",
+            municipal_ids,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          console.log("Response:", response.data);
+          setParticipants(response.data.participants);
+        } catch (error) {
+          // Handle network errors or Axios request errors
+          console.error("Error:", error);
+        }
       }
     };
     check();
@@ -97,12 +173,6 @@ const Lottery = () => {
   );
 
   //---------------------------------------
-  const [participants, setParticipants] = useState([]);
-  const [municipals, setMunicipals] = useState([]);
-  const [numberOfWinners, setNumberOfWinners] = useState(0);
-  const [currentWinner, setCurrentWinner] = useState("");
-  const [winners, setWinners] = useState([]);
-  const [totalWinners, setTotalWinners] = useState(0);
 
   useEffect(() => {
     const mun_name = JSON.parse(localStorage.getItem("municipals_names"));
@@ -112,30 +182,60 @@ const Lottery = () => {
   const handledraw = async () => {
     setIsStarted(true);
     const accessToken = localStorage.getItem("accessToken");
-    const municipal_ids = JSON.parse(localStorage.getItem("municipals_ids"));
+    const storedMunicipalIds = localStorage.getItem("municipals_ids");
+    const municipal_ids = storedMunicipalIds
+      ? JSON.parse(storedMunicipalIds)
+      : [];
     console.log("municipal_ids", municipal_ids);
 
     const check = async () => {
-      try {
-        const response = await axios.post(
-          "/lottery/result",
-          {
-            municipals: municipal_ids.municipals,
-            used_seats: newSeats,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
+      if (Array.isArray(municipal_ids)) {
+        const ids = municipal_ids.map((item) => item.id);
+
+        console.log("tranformed data", ids);
+        console.log("hereeeeeeeee");
+        try {
+          console.log("HERE GETTING WINNERS");
+          const response = await axios.post(
+            "/lottery/result",
+            { municipals: ids, used_seats: 0 },
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          console.log("ResponsewINNERS:", response.data);
+          setTotalWinners(response.data.total_winners);
+          setInitialWinners(response.data.winners);
+          console.log("initial winners are this ", initialWinners);
+        } catch (error) {
+          // Handle network errors or Axios request errors
+          console.error("Error:", error);
+        }
+      } else {
+        console.log("not array in winners response");
+        try {
+          const response = await axios.post(
+            "/lottery/result",
+            {
+              municipals: municipal_ids.municipals,
+              used_seats: newSeats,
             },
-          }
-        );
-        console.log("Response:", response.data);
-        setTotalWinners(response.data.total_winners);
-        setInitialWinners(response.data.winners);
-        console.log("initial winners are this ", initialWinners);
-      } catch (error) {
-        // Handle network errors or Axios request errors
-        console.error("Error:", error);
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          console.log("Response:", response.data);
+          setTotalWinners(response.data.total_winners);
+          setInitialWinners(response.data.winners);
+          console.log("initial winners are this ", initialWinners);
+        } catch (error) {
+          // Handle network errors or Axios request errors
+          console.error("Error:", error);
+        }
       }
     };
     check();
@@ -192,14 +292,6 @@ const Lottery = () => {
     isPaused,
     winnerPosition,
   ]);
-
-  const [finished, setFinished] = useState(false);
-  useEffect(() => {
-    if (numberOfWinners === totalWinners && initialWinners.length > 0) {
-      console.log("All winners are selected");
-      setFinished(true);
-    }
-  }, [numberOfWinners]);
 
   const [status, setStatus] = useState("");
 
@@ -266,6 +358,7 @@ const Lottery = () => {
           }}
         >
           {/*   ------------------------------List of municipals--------------------------------------*/}
+
           <List
             sx={{
               width: "200px",
@@ -449,7 +542,10 @@ const Lottery = () => {
           {finished && status === "done" && (
             <button
               className="button"
-              onClick={() => setIsPaused(false)}
+              onClick={() => {
+                setIsPaused(false);
+                navigate("/admin/Winners");
+              }}
               style={{
                 height: "50px",
                 width: "160px",
@@ -458,7 +554,7 @@ const Lottery = () => {
                 position: "relative",
               }}
             >
-              Draw is Finished
+              Preview Winners
             </button>
           )}
           {finished && status === "remain" && (
@@ -466,6 +562,7 @@ const Lottery = () => {
               className="button"
               onClick={() => {
                 setIsPaused(false);
+
                 navigate("/admin/grouping");
               }}
               style={{
@@ -517,7 +614,7 @@ const Lottery = () => {
               <DataGrid
                 columns={columns}
                 rows={participants}
-                getRowId={(row) => row.nin}
+                getRowId={(row) => row?.nin}
                 hideFooterSelectedRowCount
                 initialState={{
                   pagination: { paginationModel: { pageSize: 10 } },
@@ -583,6 +680,9 @@ const Lottery = () => {
               />
             </ThemeProvider>
           </Box>
+
+          {/*   ------------------------------Table of winners--------------------------------------*/}
+
           <Box
             sx={{
               width: "540px",
@@ -606,7 +706,7 @@ const Lottery = () => {
               <DataGrid
                 columns={columns}
                 rows={winners}
-                getRowId={(row) => row.nin}
+                getRowId={(row) => row?.nin}
                 hideFooterSelectedRowCount
                 initialState={{
                   pagination: { paginationModel: { pageSize: 10 } },

@@ -15,6 +15,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import CloseIcon from "@mui/icons-material/Close";
 import Person2OutlinedIcon from "@mui/icons-material/Person2Outlined";
 import Wilayaicon from "../../assets/WilayaIcon.png";
+import Alert from "@mui/material/Alert";
 
 const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]+$/;
 const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -22,9 +23,24 @@ const passwordPattern = /^(?=.*[A-Z])(?=.*\d).{8,26}$/;
 
 const Admins = () => {
   const accessToken = localStorage.getItem("accessToken");
-  const [deleted, setDeleted] = useState(false);
 
+  //alert status
+  const [alertsuc, setAlertSuc] = useState(false);
+  const [alertErr, setAlertErr] = useState(false);
+  const [alertInfo, setAlertInfo] = useState(false);
+  const [err, setErr] = useState("");
+
+  const hideAlert = () => {
+    setTimeout(() => {
+      setAlertSuc(false);
+      setAlertErr(false);
+      setAlertInfo(false);
+    }, 3000);
+  };
+
+  const [refresh, setRefresh] = useState(false);
   const [addAdmin, setAddAdmin] = useState(false);
+
   const [submitted, setSubmitted] = useState(false);
   //First name states
   const [firstName, setFirstName] = useState("");
@@ -98,14 +114,20 @@ const Admins = () => {
         setData(formattedData);
         console.log("the admin new data", data);
       } catch (error) {
+        setAlertErr(true);
+        setErr("An error occurred, please try again later");
+        hideAlert();
         console.error("Error:", error);
       }
     };
     fetchAdmins();
+  }, [refresh]);
 
-    console.log("deleted in the fetch admin", deleted);
-    console.log("addAdmin in the fetch admin", addAdmin);
-  }, [deleted, addAdmin]);
+  const [ConfirmDeletion, setConfirmDeletion] = useState(false);
+
+  const confirmDelete = () => {
+    setConfirmDeletion(true);
+  };
 
   //wilayas fetching------------------
   useEffect(() => {
@@ -121,6 +143,9 @@ const Admins = () => {
 
         setStateOptions(fetchedOptions);
       } catch (error) {
+        setAlertErr(true);
+        setErr("An error occurred, please try again later");
+        hideAlert();
         console.error("Error:", error);
       }
     };
@@ -205,6 +230,9 @@ const Admins = () => {
         console.log(response);
         setData(response.data);
       } catch (error) {
+        setAlertErr(true);
+        setErr("An error occurred, please try again later");
+        hideAlert();
         // Handle network errors or Axios request errors
         console.error("Error:", error);
       }
@@ -234,11 +262,16 @@ const Admins = () => {
       console.log(response);
 
       if (response.status === 200) {
-        alert("Admin edited successfully");
-        setDeleted(!deleted);
+        setAlertSuc(true);
+        setErr("Admin wilaya updated successfully");
+        hideAlert();
+        setRefresh(!refresh);
         handleCloseModal();
       }
     } catch (error) {
+      setAlertErr(true);
+      setErr("An error occurred while updating the admin's wilaya");
+      hideAlert();
       // Handle errors here
       console.error("Error:", error);
     }
@@ -289,10 +322,13 @@ const Admins = () => {
         console.log(response.data);
         console.log("here");
 
-        if (response.status === 201 && response.data.success) {
+        if (response.status === 201 || response.status === 200) {
           // Success, navigate to the login page
-          alert("Admin added successfully");
+          setAlertSuc(true);
+          setErr("Admin added successfully");
+          hideAlert();
           setAddAdmin(false);
+          setRefresh(!refresh);
           setFirstName("");
           setLastName("");
           setEmail("");
@@ -301,11 +337,15 @@ const Admins = () => {
           setState("");
         }
       } catch (error) {
-        // Handle errors here
+        setAlertErr(true);
+        setErr("An error occurred while adding the admin");
+        hideAlert();
         console.error("Error:", error);
       }
     } else {
-      alert("Please fill all the fields with valid entry");
+      setAlertInfo(true);
+      setErr("Please fill all the required fields");
+      hideAlert();
     }
   };
   const handleDelete = async (e) => {
@@ -325,12 +365,16 @@ const Admins = () => {
       );
       console.log(response);
 
-      if (response.status === 201 && response.data.success) {
-        alert("Admin deleted successfully");
-        setDeleted(!deleted);
+      if (response.status === 200 || response.status === 201) {
+        setAlertSuc(true);
+        setErr("Admin deleted successfully");
+        hideAlert();
+        setRefresh(!refresh);
       }
     } catch (error) {
-      // Handle errors here
+      setAlertErr(true);
+      setErr("An error occurred while deleting the admin");
+      hideAlert();
       console.error("Error:", error);
     }
   };
@@ -338,6 +382,55 @@ const Admins = () => {
   return (
     <>
       <Box sx={{ height: "80%", width: "100%" }}>
+        {alertErr && (
+          <Alert
+            sx={{
+              position: "absolute",
+              top: "10px",
+              left: "50%",
+              transform: "translate(-50%, 0)",
+              opacity: 1,
+              transition: "opacity 0.5s ease-in-out",
+              boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+            }}
+            severity="error"
+          >
+            {err}
+          </Alert>
+        )}
+        {alertsuc && (
+          <Alert
+            sx={{
+              position: "absolute",
+              top: "10px",
+              left: "50%",
+              transform: "translate(-50%, 0)",
+              opacity: 1,
+              transition: "opacity 0.5s ease-in-out",
+              boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+            }}
+            severity="success"
+          >
+            {err}
+          </Alert>
+        )}
+
+        {alertInfo && (
+          <Alert
+            sx={{
+              position: "absolute",
+              top: "10px",
+              left: "50%",
+              transform: "translate(-50%, 0)",
+              opacity: 1,
+              transition: "opacity 0.5s ease-in-out",
+              boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.2)",
+            }}
+            severity="info"
+          >
+            {err}
+          </Alert>
+        )}
         <Box
           sx={{
             height: "150px",
@@ -380,7 +473,7 @@ const Admins = () => {
               </button>
               {selectedUser && (
                 <button
-                  onClick={handleDelete}
+                  onClick={confirmDelete}
                   style={{
                     backgroundColor: "#121843",
                     height: "36px",
@@ -592,7 +685,11 @@ const Admins = () => {
                   }
                 >
                   <img src={Gendericon} fontSize="medium" className="icon" />
-                  <select required onChange={handleGenderChange}>
+                  <select
+                    required
+                    onChange={handleGenderChange}
+                    style={{ width: "85%" }}
+                  >
                     <option value="">Select gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -750,6 +847,7 @@ const Admins = () => {
                   required
                   className="custom-select"
                   onChange={handleWilaya}
+                  style={{ width: "85%" }}
                 >
                   <option value="">Select Wilaya</option>
                   {stateOptions.map((option) => (
@@ -763,6 +861,87 @@ const Admins = () => {
                 <button
                   className="button"
                   onClick={handleEdit}
+                  style={{ width: "200px" }}
+                >
+                  Confirm
+                </button>
+              </div>
+            </form>
+          </Box>
+        </Box>
+      )}
+      {ConfirmDeletion && (
+        <Box
+          sx={{
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "100%",
+            zIndex: "999",
+            backgroundColor: "rgba(61, 61, 61, 0.22)",
+            backdropFilter: "blur(10px)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              transform: "translate(-50%,-50%)",
+              left: "50%",
+              top: "50%",
+              width: {
+                xs: "95%",
+                sm: "500px",
+              },
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              overflowY: "auto",
+              p: { xs: 1, sm: 2 },
+              borderRadius: 10,
+              backgroundColor: "rgba(255, 255, 255, 1)",
+              maxHeight: "95%",
+              gap: "20px",
+            }}
+          >
+            <h2> Delete Admin</h2>
+            <CloseIcon
+              onClick={() => {
+                setConfirmDeletion(false);
+              }}
+              sx={{
+                position: "absolute",
+                top: "24px",
+                right: "24px",
+                cursor: "pointer",
+                ":hover": { color: "red" },
+              }}
+            />
+            <span>
+              Are you sure that you want to delete {selectedUser.name} ?
+            </span>
+            <form
+              className="auth-form Login-form"
+              style={{
+                width: isSmallScreen ? "90%" : "400px",
+                borderRadius: "10px",
+                padding: "20px",
+              }}
+              onSubmit={(e) => {
+                e.preventDefault;
+              }}
+            >
+              <div className="sub-but">
+                <button
+                  className="button"
+                  onClick={(e) => {
+                    setConfirmDeletion(false);
+                    handleDelete(e);
+                  }}
                   style={{ width: "200px" }}
                 >
                   Confirm

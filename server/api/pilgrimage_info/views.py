@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from roles.roles import IsGeneralAdminUser, IsGeneralAdminOrAdminUser, IsAdminUser
 from rest_framework import status
 from .models import PilgrimageSeasonInfo
-from .serializers import PilgrimageSeasonInfoSerializer, AllPilgrimageSeasonInfoSerializer
+from .serializers import PilgrimageSeasonInfoSerializer, AllPilgrimageSeasonInfoSerializer, CurrentPilgrimageSeasonInfoSerializer
 from datetime import datetime, timedelta, date
 
 @api_view(['POST'])
@@ -25,14 +25,14 @@ def create_pilgrimage_season_info(request):
     
     
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 def get_current_season(request):
     try:
         current_season = PilgrimageSeasonInfo.objects.get(is_active=True)
     except PilgrimageSeasonInfo.DoesNotExist:
         return Response({'error': 'No active season'}, status=status.HTTP_404_NOT_FOUND)
 
-    serializer = PilgrimageSeasonInfoSerializer(current_season)
+    serializer = CurrentPilgrimageSeasonInfoSerializer(current_season)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
